@@ -1,46 +1,66 @@
 import argparse
+import hashlib
 import json
+import random
+import re
+from collections import defaultdict
 from pathlib import Path
-from typing import Iterable
 
 from tiny_ai.bpe_tokenizer import E004BPETokenizer, build_tokenizer
 
 
-def iter_story_records(path: Path) -> Iterable[str]:
+CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+
+
+def clean(text: str) -> str:
+    text = text.replace("\r\n", "\n").replace("\r", "\n").strip()
+    return CONTROL_RE.sub("", text)
+
+
+def iter_story_records(path: Path):
     parts = []
     with path.open("r", encoding="utf-8") as handle:
         for line in handle:
             if line.strip():
                 parts.append(line)
             elif parts:
-                record = "".join(parts).strip()
+                record = clean("".join(parts))
                 if record:
                     yield record
                 parts = []
         if parts:
-            record = "".join(parts).strip()
+            record = clean("".join(parts))
             if record:
                 yield record
 
 
-def iter_dolly_rows(path: Path) -> Iterable[dict]:
+def iter_dolly_rows(path: Path):
     with path.open("r", encoding="utf-8") as handle:
         for line in handle:
-            if line.strip():
-                row = json.loads(line)
-                if not isinstance(row.get("instruction"), str):
-                    raise ValueError(f"Invalid instruction in {path}")
-                if not isinstance(row.get("response"), str):
-                    raise ValueError(f"Invalid response in {path}")
-                yield row
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            instruction = clean(row.get("instruction", ""))
+            context = clean(row.get("context", ""))
+            response = clean(row.get("response", ""))
+            category = clean(row.get("category", "general_qa")) or "general_qa"
+            if instruction and response:
+                yield {
+                    "instruction": instruction,
+                    "context": context,
+                    "response": response,
+                    "category": category,
+                }
 
 
 def format_instruction(row: dict) -> str:
-    instruction = row["instruction"]
-    context = row.get("context", "")
-    if context:
-        return f"User: {instruction}\nContext: {context}\nAssistant: {row['response']}"
-    return f"User: {instruction}\nAssistant: {row['response']}"
+    if row["context"]:
+        return (
+            f"User: {row['instruction']}\n"
+            f"Context: {row['context']}\n"
+            f"Assistant: {row['response']}"
+        )
+    return f"User: {row['instruction']}\nAssistant: {row['response']}"
 
 
 def tokenizer_iterator(story_path: Path, dolly_path: Path):
@@ -50,108 +70,206 @@ def tokenizer_iterator(story_path: Path, dolly_path: Path):
         yield format_instruction(row)
 
 
-def encode_text(tokenizer, text: str) -> list[int]:
-    return [tokenizer.bos_id] + tokenizer.tokenizer.encode(text, add_special_tokens=False).ids + [tokenizer.eos_id]
+def row_key(row: dict) -> str:
+    return hashlib.sha256(
+        "\0".join(
+            [row["instruction"], row["context"], row["response"]]
+        ).encode("utf-8")
+    ).hexdigest()
 
 
-def write_u16(path: Path, sequences: Iterable[list[int]]):
+def split_by_category(rows: list[dict], val_frac: float, seed: int):
+    rng = random.Random(seed)
+    groups = defaultdict(list)
+    for row in rows:
+        groups[row["category"]].append(row)
+
+    train, val = [], []
+    for category, items in groups.items():
+        rng.shuffle(items)
+        val_count = max(1, round(len(items) * val_frac))
+        val.extend(items[:val_count])
+        train.extend(items[val_count:])
+    return train, val
+
+
+def round_robin_take(groups: list[dict], count: int):
+    by_category = defaultdict(list)
+    for row in groups:
+        by_category[row["category"]].append(row)
+    categories = sorted(by_category)
+    selected = []
+    index = 0
+    while len(selected) < count and any(by_category.values()):
+        category = categories[index % len(categories)]
+        if by_category[category]:
+            selected.append(by_category[category].pop())
+        index += 1
+    return selected
+
+
+def write_jsonl(path: Path, rows):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as handle:
+        for row in rows:
+            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+
+def write_u16(path: Path, sequences):
     import struct
 
     path.parent.mkdir(parents=True, exist_ok=True)
-    count = 0
+    token_count = 0
     with path.open("wb") as handle:
         for ids in sequences:
-            if not ids:
-                continue
-            if max(ids) >= 65536:
-                raise ValueError("Token ID exceeds uint16 storage range.")
-            handle.write(struct.pack(f"<{len(ids)}H", *ids))
-            count += len(ids)
-    return count
+            if ids and max(ids) >= 65536:
+                raise ValueError("Token ID exceeds uint16 range.")
+            if ids:
+                handle.write(struct.pack(f"<{len(ids)}H", *ids))
+                token_count += len(ids)
+    return token_count
 
 
-def encode_story_file(tokenizer, source: Path, out: Path):
+def encode_story_file(tokenizer: E004BPETokenizer, source: Path, out: Path):
     return write_u16(
         out,
-        (encode_text(tokenizer, story) for story in iter_story_records(source)),
+        (
+            tokenizer.encode(story, add_bos=True, add_eos=True)
+            for story in iter_story_records(source)
+        ),
     )
 
 
-def encode_dolly_file(tokenizer, source: Path, out: Path):
+def encode_dolly_rows(tokenizer: E004BPETokenizer, rows, out: Path):
     return write_u16(
         out,
-        (encode_text(tokenizer, format_instruction(row)) for row in iter_dolly_rows(source)),
+        (
+            tokenizer.encode(format_instruction(row), add_bos=True, add_eos=True)
+            for row in rows
+        ),
     )
 
 
 def main():
-    p = argparse.ArgumentParser(description="Train E004 BPE and create disk-backed uint16 corpora.")
+    p = argparse.ArgumentParser(
+        description="Train E004 BPE and build compact uint16 training corpora."
+    )
     p.add_argument("--story-train", required=True)
     p.add_argument("--story-val", required=True)
-    p.add_argument("--dolly-train", required=True)
-    p.add_argument("--dolly-val", required=True)
+    p.add_argument("--dolly-source", required=True)
     p.add_argument("--vocab-size", type=int, default=2048)
     p.add_argument("--min-frequency", type=int, default=2)
+    p.add_argument("--max-instruction-bytes", type=int, default=300)
+    p.add_argument("--max-context-bytes", type=int, default=250)
+    p.add_argument("--max-response-bytes", type=int, default=450)
+    p.add_argument("--block-size", type=int, default=256)
+    p.add_argument("--max-dolly-train", type=int, default=1600)
+    p.add_argument("--max-dolly-val", type=int, default=240)
+    p.add_argument("--val-frac", type=float, default=0.15)
+    p.add_argument("--seed", type=int, default=1337)
     p.add_argument("--out-dir", default="data/processed/e004")
     args = p.parse_args()
 
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
 
-    raw_story_train = Path(args.story_train)
-    raw_dolly_train = Path(args.dolly_train)
-
     tokenizer, trainer = build_tokenizer(
         vocab_size=args.vocab_size,
         min_frequency=args.min_frequency,
     )
     tokenizer.train_from_iterator(
-        tokenizer_iterator(raw_story_train, raw_dolly_train),
+        tokenizer_iterator(Path(args.story_train), Path(args.dolly_source)),
         trainer=trainer,
     )
 
-    actual_vocab = tokenizer.get_vocab_size()
-    if actual_vocab != args.vocab_size:
+    wrapper = E004BPETokenizer(tokenizer)
+    if wrapper.vocab_size != args.vocab_size:
         raise RuntimeError(
-            f"Tokenizer produced vocab size {actual_vocab}, expected {args.vocab_size}."
+            f"Tokenizer produced {wrapper.vocab_size} tokens; expected {args.vocab_size}."
         )
 
     tokenizer_path = out / "tokenizer.json"
     tokenizer.save(str(tokenizer_path))
 
-    tokenizer_id = E004BPETokenizer(tokenizer)
+    eligible = []
+    seen = set()
+    source_count = 0
+    for row in iter_dolly_rows(Path(args.dolly_source)):
+        source_count += 1
+        if (
+            len(row["instruction"].encode("utf-8")) > args.max_instruction_bytes
+            or len(row["context"].encode("utf-8")) > args.max_context_bytes
+            or len(row["response"].encode("utf-8")) > args.max_response_bytes
+        ):
+            continue
+
+        encoded = wrapper.encode(
+            format_instruction(row),
+            add_bos=True,
+            add_eos=True,
+        )
+        if len(encoded) > args.block_size:
+            continue
+
+        key = row_key(row)
+        if key in seen:
+            continue
+        seen.add(key)
+        eligible.append(row)
+
+    eligible_train, eligible_val = split_by_category(
+        eligible, args.val_frac, args.seed
+    )
+    train_rows = round_robin_take(eligible_train, min(args.max_dolly_train, len(eligible_train)))
+    val_rows = round_robin_take(eligible_val, min(args.max_dolly_val, len(eligible_val)))
+
+    if not train_rows or not val_rows:
+        raise RuntimeError("Dolly filtering produced an empty train or validation split.")
+
+    write_jsonl(out / "dolly_train.jsonl", train_rows)
+    write_jsonl(out / "dolly_val.jsonl", val_rows)
 
     counts = {
         "story_train_tokens": encode_story_file(
-            tokenizer_id, Path(args.story_train), out / "story_train.u16"
+            wrapper, Path(args.story_train), out / "story_train.u16"
         ),
         "story_val_tokens": encode_story_file(
-            tokenizer_id, Path(args.story_val), out / "story_val.u16"
+            wrapper, Path(args.story_val), out / "story_val.u16"
         ),
-        "dolly_train_tokens": encode_dolly_file(
-            tokenizer_id, Path(args.dolly_train), out / "dolly_train.u16"
+        "dolly_train_tokens": encode_dolly_rows(
+            wrapper, train_rows, out / "dolly_train.u16"
         ),
-        "dolly_val_tokens": encode_dolly_file(
-            tokenizer_id, Path(args.dolly_val), out / "dolly_val.u16"
+        "dolly_val_tokens": encode_dolly_rows(
+            wrapper, val_rows, out / "dolly_val.u16"
         ),
     }
 
-    meta = {
-        "vocab_size": actual_vocab,
+    metadata = {
+        "vocab_size": wrapper.vocab_size,
         "special_tokens": {
-            "bos": tokenizer_id.bos_id,
-            "eos": tokenizer_id.eos_id,
-            "pad": tokenizer_id.pad_id,
+            "pad": wrapper.pad_id,
+            "bos": wrapper.bos_id,
+            "eos": wrapper.eos_id,
         },
-        "counts": counts,
+        "dolly_source_examples": source_count,
+        "dolly_eligible_unique": len(eligible),
+        "dolly_train_examples": len(train_rows),
+        "dolly_val_examples": len(val_rows),
+        "token_counts": counts,
     }
     (out / "metadata.json").write_text(
-        json.dumps(meta, indent=2),
+        json.dumps(metadata, indent=2),
         encoding="utf-8",
     )
 
-    print(f"vocab size: {actual_vocab}")
-    print(f"tokenizer: {tokenizer_path}")
+    print(f"vocab size: {wrapper.vocab_size}")
+    print(f"pad id: {wrapper.pad_id}")
+    print(f"bos id: {wrapper.bos_id}")
+    print(f"eos id: {wrapper.eos_id}")
+    print(f"dolly source examples: {source_count:,}")
+    print(f"dolly eligible unique: {len(eligible):,}")
+    print(f"dolly train examples: {len(train_rows):,}")
+    print(f"dolly val examples: {len(val_rows):,}")
     for key, value in counts.items():
         print(f"{key}: {value:,}")
     print(f"output: {out}")
