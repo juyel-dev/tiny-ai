@@ -42,3 +42,11 @@ def test_get_batch_from_mapped_tokens(tmp_path):
     assert x.shape == (4, 8)
     assert y.shape == (4, 8)
     assert torch.equal(y[:, :-1], x[:, 1:])
+
+
+def test_training_script_exposes_device_flag():
+    from pathlib import Path
+
+    text = Path("scripts/train_e002.py").read_text(encoding="utf-8")
+    assert '--device' in text
+    assert '"xpu"' in text
