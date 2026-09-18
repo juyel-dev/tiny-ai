@@ -60,17 +60,30 @@ def iter_records(path: Path):
                 yield record
 
 
-def reservoir_sample(path: Path, count: int, seed: int) -> list[str]:
+def reservoir_sample(path: Path, count: int, seed: int, max_chars: int, block_size: int) -> tuple[list[str], int]:
     rng = random.Random(seed)
+    tokenizer = ByteTokenizer()
     sample = []
-    for seen, record in enumerate(iter_records(path), start=1):
+    eligible = 0
+    skipped = 0
+
+    for record in iter_records(path):
+        if len(record.encode("utf-8")) > max_chars:
+            skipped += 1
+            continue
+        if len(tokenizer.encode("User: Tell me a story.\nAssistant: " + record)) > block_size:
+            skipped += 1
+            continue
+
+        eligible += 1
         if len(sample) < count:
             sample.append(record)
             continue
-        j = rng.randrange(seen)
+        j = rng.randrange(eligible)
         if j < count:
             sample[j] = record
-    return sample
+
+    return sample, skipped
 
 
 def make_story_examples(stories, seed: int, block_size: int):
@@ -107,7 +120,7 @@ def main():
         description="Prepare the local E002 corpus for E003 chat/instruction fine-tuning."
     )
     p.add_argument("--source", required=True, help="E002 processed training text file.")
-    p.add_argument("--n-stories", type=int, default=1000)
+    p.add_argument("--n-stories", type=int, default=500)
     p.add_argument("--val-frac", type=float, default=0.05)
     p.add_argument("--max-chars", type=int, default=850)
     p.add_argument("--block-size", type=int, default=256)
@@ -118,12 +131,15 @@ def main():
     if not 0 < args.val_frac < 0.5:
         raise ValueError("--val-frac must be between 0 and 0.5")
 
-    stories = [
-        story for story in reservoir_sample(Path(args.source), args.n_stories, args.seed)
-        if len(story.encode("utf-8")) <= args.max_chars
-    ]
+    stories, skipped = reservoir_sample(
+        Path(args.source),
+        args.n_stories,
+        args.seed,
+        args.max_chars,
+        args.block_size,
+    )
     if not stories:
-        raise ValueError("No stories survived the --max-chars filter.")
+        raise ValueError("No stories fit the configured E003 context limit.")
 
     story_examples, skipped = make_story_examples(stories, args.seed, args.block_size)
     examples = story_examples
@@ -141,8 +157,9 @@ def main():
     write_jsonl(out / "val.jsonl", val)
 
     print(f"story examples: {len(stories):,}")
+    print(f"story examples sampled: {len(stories):,}")
+    print(f"source stories skipped by filters: {skipped:,}")
     print(f"story examples kept: {len(story_examples):,}")
-    print(f"story examples skipped for block size: {skipped:,}")
     print(f"chat examples: {len(CHAT_EXAMPLES):,}")
     print(f"train examples: {len(train):,}")
     print(f"val examples: {len(val):,}")
