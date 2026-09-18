@@ -1,0 +1,22 @@
+experiment: E003.4
+base_checkpoint: checkpoints/e002.pt
+dataset:
+  story_source: processed TinyStories train/validation
+  instruction_source: local Dolly subset from E003.3
+  instruction_examples: 1600
+  validation_examples: 240
+  replay: enabled
+model:
+  inherited_from_checkpoint: true
+training:
+  batch_size: 8
+  learning_rate: 0.00001
+  steps: 100
+  story_weight: 0.75
+  instruction_weight: 0.25
+  eval_every: 25
+  eval_batches: 10
+  seed: 1337
+  instruction_response_only_loss: true
+  response_eos: true
+  save_best: true

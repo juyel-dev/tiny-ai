@@ -144,3 +144,52 @@ python scripts/evaluate_e002.py \
 ```
 
 **Training note:** E002 training now uses a disk-backed memory map, so the full multi-GB corpus is not loaded into RAM. The full TinyStories run is not executed in GitHub Actions and should be benchmarked locally before committing to the complete 5,000-step run. The model target itself remains only ~6.58 MiB of FP32 weights.
+
+
+## E003.4: replay-mixed instruction tuning
+
+The pure instruction SFT experiments E003–E003.3 degraded the E002 model's language generation. E003.4 therefore keeps the E002 checkpoint as the starting point and trains two objectives together:
+
+- 75% TinyStories next-token loss
+- 25% Dolly response-only instruction loss
+
+The TinyStories replay acts as a continual-pretraining anchor while the instruction objective teaches the `User: ... Assistant: ...` format. Instruction responses include EOS, so the model can learn when an answer ends.
+
+This experiment does not change the architecture, tokenizer, or final checkpoint size.
+
+The compact Dolly subset is the local dataset prepared by E003.3:
+
+```text
+data/processed/e003_3/train.jsonl
+data/processed/e003_3/val.jsonl
+```
+
+Run the measured 100-step experiment:
+
+```bash
+python scripts/train_e003_4.py \
+  --base checkpoints/e002.pt \
+  --story-train data/processed/tinystories/train.txt \
+  --story-val data/processed/tinystories/val.txt \
+  --instruction-train data/processed/e003_3/train.jsonl \
+  --instruction-val data/processed/e003_3/val.jsonl \
+  --steps 100 \
+  --batch-size 8 \
+  --lr 1e-5 \
+  --story-weight 0.75 \
+  --instruction-weight 0.25 \
+  --out checkpoints/e003_4.pt \
+  --best-out checkpoints/e003_4_best.pt
+```
+
+Evaluate the best checkpoint:
+
+```bash
+python scripts/evaluate_e003_4.py \
+  --checkpoint checkpoints/e003_4_best.pt \
+  --max-new-tokens 60 \
+  --temperature 0.1 \
+  --top-k 1
+```
+
+The key measurements are both `story_val` and `instr_val`. A useful checkpoint should improve instruction loss without causing a large regression in story loss.

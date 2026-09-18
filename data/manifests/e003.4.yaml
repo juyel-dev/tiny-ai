@@ -1,0 +1,22 @@
+experiment: E003.4
+purpose: Instruction tuning with TinyStories replay to reduce loss of pretrained language behaviour.
+
+base:
+  checkpoint: E002
+  tokenizer: byte-level, 259 vocabulary
+  architecture: unchanged
+
+instruction_data:
+  source: Databricks Dolly 15K
+  derived_from: local E003.3 context-safe train/validation subset
+  storage: local only
+
+objective:
+  story_loss_weight: 0.75
+  instruction_response_loss_weight: 0.25
+  instruction_responses_end_with_eos: true
+
+notes:
+  - The final checkpoint remains the same model size as E002.
+  - Story replay is used during fine-tuning rather than pure instruction SFT.
+  - This experiment is intentionally limited to a small measured run.
