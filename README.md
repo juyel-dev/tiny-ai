@@ -117,3 +117,45 @@ python scripts/evaluate_e003.py \
 ```
 
 The 300-step run is intentionally a measured first experiment. Increase training only after checking generated responses and validation behaviour.
+
+
+## E003.2: balanced fine-tuning
+
+E003.1 showed that longer story responses can dominate token-average loss even when chat examples are present. E003.2 changes only the fine-tuning objective/data mixing:
+- each training batch contains 50% chat examples and 50% story examples
+- loss is averaged per example over response tokens, then averaged across the batch
+- learning rate is reduced to 5e-5
+- the run is limited to 100 steps
+- the lowest validation-loss checkpoint is saved separately
+
+Prepare:
+
+```bash
+python scripts/prepare_e003_2.py \
+  --source data/processed/tinystories/train.txt \
+  --n-stories 256 \
+  --out-dir data/processed/e003_2
+```
+
+Train:
+
+```bash
+python scripts/train_e003_2.py \
+  --base checkpoints/e002.pt \
+  --train data/processed/e003_2/train.jsonl \
+  --val data/processed/e003_2/val.jsonl \
+  --steps 100 \
+  --batch-size 8 \
+  --out checkpoints/e003_2.pt \
+  --best-out checkpoints/e003_2_best.pt
+```
+
+Evaluate the best checkpoint:
+
+```bash
+python scripts/evaluate_e003.py \
+  --checkpoint checkpoints/e003_2_best.pt \
+  --max-new-tokens 60 \
+  --temperature 0.1 \
+  --top-k 1
+```
