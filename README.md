@@ -163,8 +163,8 @@ Model:
 - 192 hidden size
 - 256-token context
 - tied input/output embeddings
-- **2,218,752 parameters**
-- **~8.46 MiB FP32 weights**
+- **2,219,136 parameters**
+- **~8.465 MiB FP32 weights**
 
 BPE training is done with the Hugging Face Tokenizers library; its BPE trainer supports a target vocabulary size, special tokens, and an initial byte alphabet. citeturn638725search0turn638725search1
 
