@@ -134,7 +134,12 @@ def main():
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.01)
     best_combined = float("inf")
 
-    with MappedUInt16Tokens(args.story_train) as story_train,          MappedUInt16Tokens(args.story_val) as story_val,          MappedUInt16Tokens(args.instruction_train) as instruction_train,          MappedUInt16Tokens(args.instruction_val) as instruction_val:
+    with (
+        MappedUInt16Tokens(args.story_train) as story_train,
+        MappedUInt16Tokens(args.story_val) as story_val,
+        MappedUInt16Tokens(args.instruction_train) as instruction_train,
+        MappedUInt16Tokens(args.instruction_val) as instruction_val,
+    ):
 
         for step in range(1, args.steps + 1):
             sx, sy = get_batch_u16(
