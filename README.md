@@ -116,4 +116,4 @@ python scripts/evaluate_e003.py \
   --max-new-tokens 80
 ```
 
-The 300-step run is intentionally a measured first experiment; increase training only after checking chat quality and validation behaviour.
+The 300-step run is intentionally a measured first experiment. Increase training only after checking generated responses and validation behaviour.
