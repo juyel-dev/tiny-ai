@@ -1,9 +1,9 @@
 import argparse
 
-import torch
-
 from tiny_ai.data import load_text, get_batch
 from tiny_ai.inference import load_checkpoint, generate
+
+import torch
 
 
 def main():
@@ -28,7 +28,7 @@ def main():
     print(f"device: {device}")
     print(f"validation_loss: {mean_loss:.4f}")
     for prompt in ["Once upon a time, a little child", "The small dog walked to the", "What is two plus two?"]:
-        print(f"\nPROMPT: {prompt}\n{generate(model, tokenizer, prompt, args.max_new_tokens)}")
+        print(f"\\nPROMPT: {prompt}\\n{generate(model, tokenizer, prompt, args.max_new_tokens)}")
 
 
 if __name__ == "__main__":
