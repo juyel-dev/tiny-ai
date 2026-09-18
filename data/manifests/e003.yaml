@@ -1,0 +1,24 @@
+experiment: E003
+name: tiny-ai-e003-chat
+purpose: Narrow instruction-following fine-tune on top of the E002 TinyStories model.
+
+sources:
+  - name: Local E002 processed TinyStories training corpus
+    origin: roneneldan/TinyStories
+    usage: Existing local corpus is converted into story-request/response pairs.
+  - name: Authored chat examples
+    origin: Tiny-AI project
+    usage: Greetings, small talk, and simple conversational formatting.
+
+privacy:
+  external_user_data: false
+
+format:
+  input: JSONL with prompt and response fields
+  loss: response tokens only
+  delimiters: "User:" and "Assistant:"
+
+notes:
+  - No new tokenizer vocabulary is required.
+  - The E002 checkpoint is the initialization point.
+  - This experiment is intentionally narrow; it does not claim general factual knowledge.
