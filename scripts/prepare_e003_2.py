@@ -4,7 +4,7 @@ import random
 from pathlib import Path
 
 from tiny_ai.tokenizer import ByteTokenizer
-from scripts.prepare_e003 import CHAT_EXAMPLES, reservoir_sample
+from prepare_e003 import CHAT_EXAMPLES, reservoir_sample
 
 
 def split_examples(examples, val_frac, seed):
