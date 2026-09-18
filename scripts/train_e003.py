@@ -11,7 +11,7 @@ from tiny_ai.model import fp32_weight_size_bytes, parameter_count
 from tiny_ai.tokenizer import ByteTokenizer, PAD
 
 
-def read_examples(path: Path):
+def read_examples(path: Path, tokenizer, block_size: int):
     examples = []
     with path.open("r", encoding="utf-8") as handle:
         for line in handle:
@@ -20,9 +20,10 @@ def read_examples(path: Path):
             row = json.loads(line)
             if not isinstance(row.get("prompt"), str) or not isinstance(row.get("response"), str):
                 raise ValueError(f"Invalid JSONL row in {path}")
-            examples.append(row)
+            if encode_example(tokenizer, row["prompt"], row["response"], block_size) is not None:
+                examples.append(row)
     if not examples:
-        raise ValueError(f"No examples found in {path}")
+        raise ValueError(f"No examples fitting block size {block_size} found in {path}")
     return examples
 
 
@@ -106,8 +107,8 @@ def main():
     rng = random.Random(args.seed)
 
     model, tokenizer = load_checkpoint(args.base, device=args.device)
-    train_examples = read_examples(Path(args.train))
-    val_examples = read_examples(Path(args.val)) if args.val else None
+    train_examples = read_examples(Path(args.train), tokenizer, model.cfg.block_size)
+    val_examples = read_examples(Path(args.val), tokenizer, model.cfg.block_size) if args.val else None
 
     if args.block_size != model.cfg.block_size:
         raise ValueError(
