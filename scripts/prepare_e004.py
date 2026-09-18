@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Iterable
 
 from tiny_ai.bpe_tokenizer import E004BPETokenizer, build_tokenizer
-from tiny_ai.tokenizer import EOS, BOS
 
 
 def iter_story_records(path: Path) -> Iterable[str]:
@@ -52,7 +51,7 @@ def tokenizer_iterator(story_path: Path, dolly_path: Path):
 
 
 def encode_text(tokenizer, text: str) -> list[int]:
-    return [BOS] + tokenizer.encode(text, add_special_tokens=False).ids + [EOS]
+    return [tokenizer.bos_id] + tokenizer.tokenizer.encode(text, add_special_tokens=False).ids + [tokenizer.eos_id]
 
 
 def write_u16(path: Path, sequences: Iterable[list[int]]):
