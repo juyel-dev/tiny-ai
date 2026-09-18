@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from scripts.prepare_corpus import normalize, sha256_text, split_records
+from scripts.prepare_corpus import iter_records, normalize, sha256_text
 
 
 def test_normalize_is_deterministic():
@@ -11,8 +11,10 @@ def test_hash_changes_with_content():
     assert sha256_text("a") != sha256_text("b")
 
 
-def test_split_records():
-    assert split_records("a\n\nb\n\n a ") == ["a", "b", "a"]
+def test_iter_records_preserves_paragraphs(tmp_path):
+    source = tmp_path / "source.txt"
+    source.write_text("a\n\nb\n\n a \n", encoding="utf-8")
+    assert list(iter_records(source)) == ["a", "b", "a"]
 
 
 def test_manifest_sample_exists():
