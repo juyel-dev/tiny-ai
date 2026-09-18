@@ -7,7 +7,7 @@ from huggingface_hub import hf_hub_download
 REPO_ID = "roneneldan/TinyStories"
 REVISION = "5485261731eaac25dd8e5ebbc3839d0a9870b185"
 FILES = {
-    "train": ("TinyStories-train.txt", "c5cf5e22ff13614e830a2e849d5dd2cd153d5bc024901afeade7e35379d8f7b52"),
+    "train": ("TinyStories-train.txt", "c5cf5e22ff13614e830afbe61a99fbcbe8bcb7dd72252b989fa1117a368d401f"),
     "valid": ("TinyStories-valid.txt", "94e431816c4cce81ff71e4408ff8d3bda9a42e8d2663986697c3954288cb38b4"),
 }
 
