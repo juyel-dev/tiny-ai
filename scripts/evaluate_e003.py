@@ -18,6 +18,8 @@ def main():
     p.add_argument("--checkpoint", required=True)
     p.add_argument("--prompts", default=None, help="Optional JSONL file with a prompt field.")
     p.add_argument("--max-new-tokens", type=int, default=80)
+    p.add_argument("--temperature", type=float, default=0.8)
+    p.add_argument("--top-k", type=int, default=40)
     p.add_argument("--device", choices=["cpu", "cuda"], default="cpu")
     args = p.parse_args()
 
@@ -34,7 +36,15 @@ def main():
 
     for prompt in prompts:
         formatted = f"User: {prompt}\nAssistant:"
-        print(f"\nPROMPT: {prompt}\n{generate(model, tokenizer, formatted, args.max_new_tokens)}")
+        output = generate(
+            model,
+            tokenizer,
+            formatted,
+            max_new_tokens=args.max_new_tokens,
+            temperature=args.temperature,
+            top_k=args.top_k,
+        )
+        print(f"\nPROMPT: {prompt}\n{output}")
 
 
 if __name__ == "__main__":
