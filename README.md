@@ -85,7 +85,6 @@ python scripts/chat.py --checkpoint checkpoints/e001.pt
 4. Never claim capability from model size alone.
 5. Keep the model itself separate from optional external knowledge/retrieval.
 
-
 ## E002: data + 5 MiB baseline
 
 E002 keeps the E001 architecture intact while adding a reproducible corpus-preparation path and a larger baseline configuration. The candidate is 1,724,080 parameters, approximately 6.58 MiB of FP32 weights with tied embeddings.
@@ -95,13 +94,12 @@ The initial corpus manifest targets TinyStories (roneneldan/TinyStories). The da
 Typical flow:
 
 1. Obtain the licensed source text locally.
-2. Run the corpus preparation script with the source text files.
+2. Run the corpus preparation script with the source train/validation files.
 3. Inspect the reported example and byte-token counts.
 4. Measure the model with scripts/model_size.py.
 5. Train with scripts/train_e002.py.
 
 E002 is an English pretraining baseline. Multilingual training data is a separate experiment so that language coverage is not accidentally conflated with architecture scaling.
-
 
 ### E002 reproducible run
 
@@ -118,32 +116,31 @@ python scripts/fetch_tinystories.py --split valid
 python scripts/fetch_tinystories.py --split train
 ```
 
-The fetcher pins source revision `5485261731eaac25dd8e5ebbc3839d0a9870b185` and verifies the recorded file hashes before training. The official dataset currently lists the original train text at about 1.92 GB and validation text at about 19.4 MB, so neither belongs in git. See the official TinyStories dataset page: https://huggingface.co/datasets/roneneldan/TinyStories
-
-Then prepare the corpus:
+Then prepare the corpus while preserving the source train/validation split:
 
 ```bash
-python scripts/prepare_corpus.py \\
-  --input data/raw/tinystories/TinyStories-train.txt data/raw/tinystories/TinyStories-valid.txt \\
+python scripts/prepare_corpus.py \
+  --train data/raw/tinystories/TinyStories-train.txt \
+  --val data/raw/tinystories/TinyStories-valid.txt \
   --out-dir data/processed/tinystories
 ```
 
 Run the baseline training with validation monitoring:
 
 ```bash
-python scripts/train_e002.py \\
-  --train data/processed/tinystories/train.txt \\
-  --val data/processed/tinystories/val.txt \\
-  --steps 5000 \\
+python scripts/train_e002.py \
+  --train data/processed/tinystories/train.txt \
+  --val data/processed/tinystories/val.txt \
+  --steps 5000 \
   --out checkpoints/e002.pt
 ```
 
 Evaluate the saved checkpoint:
 
 ```bash
-python scripts/evaluate_e002.py \\
-  --checkpoint checkpoints/e002.pt \\
+python scripts/evaluate_e002.py \
+  --checkpoint checkpoints/e002.pt \
   --val data/processed/tinystories/val.txt
 ```
 
-**Training note:** the repository now contains the complete reproducible experiment recipe, but the full TinyStories run is intentionally not executed in GitHub Actions. It needs a local machine/GPU with enough disk and memory for the multi-GB corpus and training workload. The model target itself remains only ~6.58 MiB of FP32 weights.
+**Training note:** the repository contains the reproducible experiment recipe, but the full TinyStories run is not executed in GitHub Actions. It needs a local machine/GPU with enough disk and memory for the multi-GB corpus and training workload. The model target itself remains only ~6.58 MiB of FP32 weights.
