@@ -132,24 +132,67 @@ def write_u16(path: Path, sequences):
     return token_count
 
 
-def encode_story_file(tokenizer: E004BPETokenizer, source: Path, out: Path):
-    return write_u16(
-        out,
-        (
-            tokenizer.encode(story, add_bos=True, add_eos=True)
-            for story in iter_story_records(source)
-        ),
+def encode_story_file(
+    tokenizer: E004BPETokenizer, source: Path, out: Path, progress_every: int = 10_000
+):
+    token_count = 0
+    story_count = 0
+    out.parent.mkdir(parents=True, exist_ok=True)
+    import struct
+
+    with out.open("wb") as handle:
+        for story_count, story in enumerate(iter_story_records(source), start=1):
+            ids = tokenizer.encode(story, add_bos=True, add_eos=True)
+            if ids and max(ids) >= 65536:
+                raise ValueError("Token ID exceeds uint16 range.")
+            if ids:
+                handle.write(struct.pack(f"<{len(ids)}H", *ids))
+                token_count += len(ids)
+            if story_count % progress_every == 0:
+                print(
+                    f"  {source.name}: {story_count:,} stories | "
+                    f"{token_count:,} tokens written",
+                    flush=True,
+                )
+    print(
+        f"  {source.name}: DONE | {story_count:,} stories | "
+        f"{token_count:,} tokens",
+        flush=True,
     )
+    return token_count
 
 
-def encode_dolly_rows(tokenizer: E004BPETokenizer, rows, out: Path):
-    return write_u16(
-        out,
-        (
-            tokenizer.encode(format_instruction(row), add_bos=True, add_eos=True)
-            for row in rows
-        ),
+def encode_dolly_rows(
+    tokenizer: E004BPETokenizer, rows, out: Path, progress_every: int = 200
+):
+    token_count = 0
+    out.parent.mkdir(parents=True, exist_ok=True)
+    import struct
+
+    with out.open("wb") as handle:
+        for row_index, row in enumerate(rows, start=1):
+            ids = tokenizer.encode(
+                format_instruction(row),
+                add_bos=True,
+                add_eos=True,
+            )
+            if ids and max(ids) >= 65536:
+                raise ValueError("Token ID exceeds uint16 range.")
+            if ids:
+                handle.write(struct.pack(f"<{len(ids)}H", *ids))
+                token_count += len(ids)
+            if row_index % progress_every == 0:
+                print(
+                    f"  {out.name}: {row_index:,} rows | "
+                    f"{token_count:,} tokens written",
+                    flush=True,
+                )
+    print(
+        f"  {out.name}: DONE | {len(rows):,} rows | "
+        f"{token_count:,} tokens",
+        flush=True,
     )
+    return token_count
 
 
 def main():
@@ -176,6 +219,9 @@ def main():
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
 
+    print("E004 preparation started.", flush=True)
+    print("Stage 1/5: training ByteLevel BPE tokenizer...", flush=True)
+
     tokenizer, trainer = build_tokenizer(
         vocab_size=args.vocab_size,
         min_frequency=args.min_frequency,
@@ -197,7 +243,12 @@ def main():
 
     tokenizer_path = out / "tokenizer.json"
     tokenizer.save(str(tokenizer_path))
+    print(
+        f"Stage 1/5 DONE: vocab={wrapper.vocab_size}, saved={tokenizer_path}",
+        flush=True,
+    )
 
+    print("Stage 2/5: filtering and splitting Dolly...", flush=True)
     eligible = []
     seen = set()
     source_count = 0
@@ -224,31 +275,56 @@ def main():
         seen.add(key)
         eligible.append(row)
 
+        if source_count % 2_000 == 0:
+            print(
+                f"  Dolly scanned: {source_count:,} | eligible: {len(eligible):,}",
+                flush=True,
+            )
+
     eligible_train, eligible_val = split_by_category(
         eligible, args.val_frac, args.seed
     )
-    train_rows = round_robin_take(eligible_train, min(args.max_dolly_train, len(eligible_train)))
-    val_rows = round_robin_take(eligible_val, min(args.max_dolly_val, len(eligible_val)))
+    train_rows = round_robin_take(
+        eligible_train, min(args.max_dolly_train, len(eligible_train))
+    )
+    val_rows = round_robin_take(
+        eligible_val, min(args.max_dolly_val, len(eligible_val))
+    )
 
     if not train_rows or not val_rows:
         raise RuntimeError("Dolly filtering produced an empty train or validation split.")
 
     write_jsonl(out / "dolly_train.jsonl", train_rows)
     write_jsonl(out / "dolly_val.jsonl", val_rows)
+    print(
+        f"Stage 2/5 DONE: source={source_count:,}, eligible={len(eligible):,}, "
+        f"train={len(train_rows):,}, val={len(val_rows):,}",
+        flush=True,
+    )
+
+    print("Stage 3/5: tokenizing full TinyStories train...", flush=True)
+    story_train_tokens = encode_story_file(
+        wrapper, Path(args.story_train), out / "story_train.u16"
+    )
+
+    print("Stage 4/5: tokenizing full TinyStories validation...", flush=True)
+    story_val_tokens = encode_story_file(
+        wrapper, Path(args.story_val), out / "story_val.u16"
+    )
+
+    print("Stage 5/5: tokenizing selected Dolly splits...", flush=True)
+    dolly_train_tokens = encode_dolly_rows(
+        wrapper, train_rows, out / "dolly_train.u16"
+    )
+    dolly_val_tokens = encode_dolly_rows(
+        wrapper, val_rows, out / "dolly_val.u16"
+    )
 
     counts = {
-        "story_train_tokens": encode_story_file(
-            wrapper, Path(args.story_train), out / "story_train.u16"
-        ),
-        "story_val_tokens": encode_story_file(
-            wrapper, Path(args.story_val), out / "story_val.u16"
-        ),
-        "dolly_train_tokens": encode_dolly_rows(
-            wrapper, train_rows, out / "dolly_train.u16"
-        ),
-        "dolly_val_tokens": encode_dolly_rows(
-            wrapper, val_rows, out / "dolly_val.u16"
-        ),
+        "story_train_tokens": story_train_tokens,
+        "story_val_tokens": story_val_tokens,
+        "dolly_train_tokens": dolly_train_tokens,
+        "dolly_val_tokens": dolly_val_tokens,
     }
 
     metadata = {
@@ -281,6 +357,7 @@ def main():
     for key, value in counts.items():
         print(f"{key}: {value:,}")
     print(f"output: {out}")
+    print("E004 preparation COMPLETE.", flush=True)
 
 
 if __name__ == "__main__":
