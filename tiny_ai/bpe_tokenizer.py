@@ -60,7 +60,7 @@ class E004BPETokenizer:
         return self.tokenizer.decode(ids, skip_special_tokens=True)
 
 
-def build_tokenizer(vocab_size: int = 2048, min_frequency: int = 2) -> Tokenizer:
+def build_tokenizer(vocab_size: int = 2048, min_frequency: int = 2):
     tokenizer = Tokenizer(BPE(unk_token=UNK_TOKEN))
     tokenizer.pre_tokenizer = ByteLevel(add_prefix_space=False)
     tokenizer.decoder = ByteLevelDecoder()
