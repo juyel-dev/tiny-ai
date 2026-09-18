@@ -144,3 +144,53 @@ python scripts/evaluate_e002.py \
 ```
 
 **Training note:** E002 training now uses a disk-backed memory map, so the full multi-GB corpus is not loaded into RAM. The full TinyStories run is not executed in GitHub Actions and should be benchmarked locally before committing to the complete 5,000-step run. The model target itself remains only ~6.58 MiB of FP32 weights.
+
+
+## E003.3: Dolly instruction fine-tuning
+
+E003 and E003.2 used a very small authored chat corpus and produced poor instruction-following generations. E003.3 switches to the human-generated Databricks Dolly 15K instruction dataset.
+
+The source contains 15,015 English instruction-following records across multiple categories and is licensed CC BY-SA 3.0. The experiment uses a pinned source revision and SHA-256 checksum for reproducibility.
+
+Only short, context-safe examples are selected for the 256-byte-token context window. The preparation script keeps category diversity, deduplicates examples, and writes a local JSONL train/validation split.
+
+Download and verify the source:
+
+```bash
+python scripts/fetch_dolly.py
+```
+
+Prepare the compact E003.3 subset:
+
+```bash
+python scripts/prepare_e003_3.py \
+  --source data/raw/dolly/databricks-dolly-15k.jsonl \
+  --max-train 1600 \
+  --max-val 240 \
+  --out-dir data/processed/e003_3
+```
+
+Run the first measured fine-tune:
+
+```bash
+python scripts/train_e003_3.py \
+  --base checkpoints/e002.pt \
+  --train data/processed/e003_3/train.jsonl \
+  --val data/processed/e003_3/val.jsonl \
+  --steps 200 \
+  --batch-size 8 \
+  --out checkpoints/e003_3.pt \
+  --best-out checkpoints/e003_3_best.pt
+```
+
+Evaluate:
+
+```bash
+python scripts/evaluate_e003.py \
+  --checkpoint checkpoints/e003_3_best.pt \
+  --max-new-tokens 60 \
+  --temperature 0.1 \
+  --top-k 1
+```
+
+E003.3 adds EOS to every response target and stops generation when EOS is emitted. The model architecture and tokenizer vocabulary size remain unchanged.
