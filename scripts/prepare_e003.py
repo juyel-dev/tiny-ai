@@ -234,7 +234,7 @@ def main():
     if not 0 < args.val_frac < 0.5:
         raise ValueError("--val-frac must be between 0 and 0.5")
 
-    stories, skipped = reservoir_sample(
+    stories, source_skipped = reservoir_sample(
         Path(args.source),
         args.n_stories,
         args.seed,
@@ -244,7 +244,7 @@ def main():
     if not stories:
         raise ValueError("No stories fit the configured E003 context limit.")
 
-    story_examples, skipped = make_story_examples(stories, args.seed, args.block_size)
+    story_examples, story_skipped = make_story_examples(stories, args.seed, args.block_size)
     examples = story_examples
     examples.extend({"prompt": prompt, "response": response} for prompt, response in CHAT_EXAMPLES)
 
@@ -259,10 +259,9 @@ def main():
     write_jsonl(out / "train.jsonl", train)
     write_jsonl(out / "val.jsonl", val)
 
-    print(f"story examples: {len(stories):,}")
     print(f"story examples sampled: {len(stories):,}")
-    print(f"source stories skipped by filters: {skipped:,}")
-    print(f"story examples kept: {len(story_examples):,}")
+    print(f"source stories skipped by filters: {source_skipped:,}")
+    print(f"sampled stories skipped by final template: {story_skipped:,}")
     print(f"chat examples: {len(CHAT_EXAMPLES):,}")
     print(f"train examples: {len(train):,}")
     print(f"val examples: {len(val):,}")
