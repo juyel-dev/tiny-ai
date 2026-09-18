@@ -1,0 +1,15 @@
+experiment: E003.1
+base_checkpoint: checkpoints/e002.pt
+dataset:
+  story_examples: 500
+  authored_chat_examples: 100+
+  format: JSONL
+model:
+  inherited_from_checkpoint: true
+training:
+  batch_size: 8
+  learning_rate: 0.0001
+  steps: 300
+  eval_every: 50
+  seed: 1337
+  response_only_loss: true
