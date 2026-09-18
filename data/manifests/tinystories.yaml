@@ -1,0 +1,20 @@
+name: TinyStories
+source: roneneldan/TinyStories
+source_url: https://huggingface.co/datasets/roneneldan/TinyStories
+license: CDLA-Sharing-1.0
+language: en
+purpose: pretraining-baseline
+notes:
+  - Synthetic short stories generated with GPT-3.5 and GPT-4.
+  - Keep the raw dataset outside this repository.
+  - Record the exact source revision used for each training run.
+  - Review the dataset license before redistributing trained weights or data-derived artifacts.
+
+source_revision: 5485261731eaac25dd8e5ebbc3839d0a9870b185
+files:
+  train:
+    name: TinyStories-train.txt
+    sha256: c5cf5e22ff13614e830a2e849d5dd2cd153d5bc024901afeade7e35379d8f7b52
+  valid:
+    name: TinyStories-valid.txt
+    sha256: 94e431816c4cce81ff71e4408ff8d3bda9a42e8d2663986697c3954288cb38b4
