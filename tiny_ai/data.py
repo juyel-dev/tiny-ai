@@ -53,6 +53,11 @@ def get_batch(tokens, block_size: int, batch_size: int, device: str):
     max_start = len(tokens) - block_size
     starts = torch.randint(0, max_start, (batch_size,))
 
+    if isinstance(tokens, torch.Tensor):
+        x = torch.stack([tokens[int(i):int(i) + block_size] for i in starts])
+        y = torch.stack([tokens[int(i) + 1:int(i) + block_size + 1] for i in starts])
+        return x.to(device), y.to(device)
+
     xs = []
     ys = []
     for start in starts.tolist():
