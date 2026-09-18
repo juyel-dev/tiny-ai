@@ -1,0 +1,19 @@
+experiment: E002
+dataset:
+  name: tinystories
+  source: roneneldan/TinyStories
+  license: CDLA-Sharing-1.0
+  language: en
+  validation_fraction: 0.01
+model:
+  vocab_size: 259
+  block_size: 256
+  n_layer: 4
+  n_head: 4
+  n_embd: 160
+  dropout: 0.0
+training:
+  batch_size: 16
+  learning_rate: 0.0003
+  steps: 5000
+  seed: 1337
