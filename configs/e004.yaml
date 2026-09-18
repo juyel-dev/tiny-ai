@@ -1,0 +1,33 @@
+experiment: E004
+type: from_scratch
+
+tokenizer:
+  type: ByteLevelBPE
+  vocab_size: 2048
+  tokenizer_story_examples: 100000
+  min_frequency: 2
+  special_tokens: ["<pad>", "<bos>", "<eos>", "<unk>"]
+
+model:
+  vocab_size: 2048
+  block_size: 256
+  n_layer: 4
+  n_head: 6
+  n_embd: 192
+  tied_embeddings: true
+  dropout: 0.0
+
+measured_parameter_target:
+  parameters: 2218752
+  fp32_weight_mib: 8.464
+
+training:
+  batch_size: 8
+  learning_rate: 0.0003
+  story_weight: 0.75
+  instruction_weight: 0.25
+  steps: 100
+  eval_every: 25
+  eval_batches: 10
+  seed: 1337
+  device: cpu
