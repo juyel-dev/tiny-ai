@@ -87,7 +87,7 @@ python scripts/chat.py --checkpoint checkpoints/e001.pt
 
 ## E002: data + 5 MiB baseline
 
-E002 keeps the E001 architecture intact while adding a reproducible corpus-preparation path and a larger baseline configuration. The candidate is 1,724,080 parameters, approximately 6.58 MiB of FP32 weights with tied embeddings.
+E002 keeps the E001 architecture intact while adding a reproducible corpus-preparation path and a larger baseline configuration. The candidate is 1,317,280 parameters, approximately 6.58 MiB of FP32 weights with tied embeddings.
 
 The initial corpus manifest targets TinyStories (roneneldan/TinyStories). The dataset card identifies it as English synthetic short stories and lists CDLA-Sharing-1.0; keep the raw corpus outside git and record the exact revision used for every experiment.
 
