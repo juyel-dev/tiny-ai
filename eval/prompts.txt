@@ -1,0 +1,19 @@
+# Tiny-AI fixed evaluation prompts
+
+## Basic generation
+Once upon a time, a little child
+
+## Continuation
+The small dog walked to the
+
+## Question-like prompt
+What is two plus two?
+
+## Instruction-like prompt
+Write one short sentence about a tree.
+
+## Repetition check
+A B C A B C
+
+## Bengali Unicode smoke test
+বাংলা ভাষায় একটি ছোট বাক্য
