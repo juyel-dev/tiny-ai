@@ -1,0 +1,26 @@
+experiment: E004
+purpose: Train a genuinely tiny generative model from scratch with a more efficient subword representation.
+
+sources:
+  - name: roneneldan/TinyStories
+    role: primary language pretraining
+    split: official train/validation
+  - name: databricks/databricks-dolly-15k
+    role: instruction-style text mixed into from-scratch training
+    license: CC BY-SA 3.0
+    rows: 15015
+    source_sha256: 2df9083338b4abd6bceb5635764dab5d833b393b55759dffb0959b6fcbf794ec
+
+tokenizer:
+  type: byte-level BPE
+  vocab_size: 2048
+  rationale: frequent byte sequences become subword tokens while retaining byte-level coverage.
+
+storage:
+  token_dtype: uint16
+  rationale: 2048 vocabulary IDs fit in 16 bits and avoid one-byte vocab limitation.
+
+objective:
+  story: causal next-token prediction
+  instruction: assistant-format next-token prediction with EOS
+  mixing: weighted 75/25
