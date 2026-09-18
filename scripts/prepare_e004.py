@@ -63,8 +63,10 @@ def format_instruction(row: dict) -> str:
     return f"User: {row['instruction']}\nAssistant: {row['response']}"
 
 
-def tokenizer_iterator(story_path: Path, dolly_path: Path):
-    for story in iter_story_records(story_path):
+def tokenizer_iterator(story_path: Path, dolly_path: Path, max_story_examples: int):
+    for index, story in enumerate(iter_story_records(story_path)):
+        if index >= max_story_examples:
+            break
         yield story
     for row in iter_dolly_rows(dolly_path):
         yield format_instruction(row)
@@ -159,6 +161,7 @@ def main():
     p.add_argument("--dolly-source", required=True)
     p.add_argument("--vocab-size", type=int, default=2048)
     p.add_argument("--min-frequency", type=int, default=2)
+    p.add_argument("--tokenizer-story-examples", type=int, default=100000)
     p.add_argument("--max-instruction-bytes", type=int, default=300)
     p.add_argument("--max-context-bytes", type=int, default=250)
     p.add_argument("--max-response-bytes", type=int, default=450)
@@ -178,7 +181,11 @@ def main():
         min_frequency=args.min_frequency,
     )
     tokenizer.train_from_iterator(
-        tokenizer_iterator(Path(args.story_train), Path(args.dolly_source)),
+        tokenizer_iterator(
+            Path(args.story_train),
+            Path(args.dolly_source),
+            args.tokenizer_story_examples,
+        ),
         trainer=trainer,
     )
 
@@ -251,6 +258,7 @@ def main():
             "bos": wrapper.bos_id,
             "eos": wrapper.eos_id,
         },
+        "tokenizer_story_examples": args.tokenizer_story_examples,
         "dolly_source_examples": source_count,
         "dolly_eligible_unique": len(eligible),
         "dolly_train_examples": len(train_rows),
