@@ -1,0 +1,18 @@
+experiment: E003.2
+base_checkpoint: checkpoints/e002.pt
+dataset:
+  story_examples: 256
+  authored_chat_examples: all
+  balancing: batch-level 50/50 by example kind
+  loss: per-example mean over response tokens
+model:
+  inherited_from_checkpoint: true
+training:
+  batch_size: 8
+  learning_rate: 0.00005
+  steps: 100
+  eval_every: 25
+  eval_batches: 20
+  seed: 1337
+  response_only_loss: true
+  save_best: true
