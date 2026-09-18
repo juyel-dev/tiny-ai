@@ -7,7 +7,8 @@ A research project for building a genuinely generative, offline language model w
 - **E001** — end-to-end pipeline baseline.
 - **E002** — TinyStories language-model baseline.
 - **E003** — narrow chat/instruction fine-tuning on top of E002.
-- **E004** — later experiment based on measured E003 results.
+- **E003.1** — expanded authored chat data + context-safe story sampling.
+- **E004** — later experiment based on measured E003.1 results.
 
 ## E002 baseline
 
@@ -77,3 +78,42 @@ python scripts/train_e003.py \
 ```
 
 E003 is deliberately narrow. It is an experiment in instruction following and conversation formatting, not a claim of general knowledge or a general-purpose assistant.
+
+
+### E003.1: first stronger chat experiment
+
+E003.1 keeps the E002 architecture and checkpoint size unchanged, but improves the training set:
+- story examples are sampled only when they fit the 256-byte-token context
+- the authored conversational set is expanded substantially
+- response-only loss remains unchanged
+
+Prepare the data:
+
+```bash
+python scripts/prepare_e003.py \
+  --source data/processed/tinystories/train.txt \
+  --n-stories 500 \
+  --out-dir data/processed/e003
+```
+
+Run the first real E003.1 experiment:
+
+```bash
+python scripts/train_e003.py \
+  --base checkpoints/e002.pt \
+  --train data/processed/e003/train.jsonl \
+  --val data/processed/e003/val.jsonl \
+  --steps 300 \
+  --batch-size 8 \
+  --out checkpoints/e003_1.pt
+```
+
+Evaluate:
+
+```bash
+python scripts/evaluate_e003.py \
+  --checkpoint checkpoints/e003_1.pt \
+  --max-new-tokens 80
+```
+
+The 300-step run is intentionally a measured first experiment; increase training only after checking chat quality and validation behaviour.
