@@ -1,0 +1,24 @@
+experiment: E003.3
+dataset: databricks/databricks-dolly-15k
+revision: 9be7fbc9723eccdbdd4e9d0c3e6ae3519d06992a
+file: databricks-dolly-15k.jsonl
+sha256: 2df9083338b4abd6bceb5635764dab5d833b393b55759dffb0959b6fcbf794ec
+license: CC BY-SA 3.0
+rows: 15015
+
+selection:
+  max_formatted_tokens: 256
+  max_instruction_bytes: 180
+  max_context_bytes: 120
+  max_response_bytes: 160
+  deduplicate: true
+  category_balanced: true
+
+format:
+  prompt: "User: <instruction>[optional Context: <context>]\\nAssistant: "
+  response: "<response><EOS>"
+  loss: response tokens only
+
+notes:
+  - Training data is downloaded locally and is not committed to git.
+  - The source dataset contains human-generated instruction-following records across multiple categories.
