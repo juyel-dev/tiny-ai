@@ -1,0 +1,21 @@
+experiment: E003.3
+base_checkpoint: checkpoints/e002.pt
+dataset:
+  source: databricks/databricks-dolly-15k
+  revision: 9be7fbc9723eccdbdd4e9d0c3e6ae3519d06992a
+  license: CC BY-SA 3.0
+  train_examples: 1600
+  val_examples: 240
+  max_formatted_tokens: 256
+  response_eos: true
+model:
+  inherited_from_checkpoint: true
+training:
+  batch_size: 8
+  learning_rate: 0.00005
+  steps: 200
+  eval_every: 25
+  eval_batches: 20
+  seed: 1337
+  response_only_loss: true
+  save_best: true
