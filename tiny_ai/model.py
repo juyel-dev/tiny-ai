@@ -93,7 +93,7 @@ class TinyTransformer(nn.Module):
         return logits, loss
 
     @torch.no_grad()
-    def generate(self, idx, max_new_tokens=64, temperature=0.8, top_k=40):
+    def generate(self, idx, max_new_tokens=64, temperature=0.8, top_k=40, eos_token_id=None):
         self.eval()
         for _ in range(max_new_tokens):
             idx_cond = idx[:, -self.cfg.block_size:]
@@ -105,6 +105,8 @@ class TinyTransformer(nn.Module):
             probs = F.softmax(logits, dim=-1)
             next_id = torch.multinomial(probs, num_samples=1)
             idx = torch.cat((idx, next_id), dim=1)
+            if eos_token_id is not None and torch.all(next_id.eq(eos_token_id)):
+                break
         return idx
 
 def parameter_count(model):
