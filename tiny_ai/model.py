@@ -3,6 +3,7 @@ from torch import nn
 import torch.nn.functional as F
 
 from .config import ModelConfig
+from .tokenizer import EOS
 
 class CausalSelfAttention(nn.Module):
     def __init__(self, cfg: ModelConfig):
@@ -105,6 +106,8 @@ class TinyTransformer(nn.Module):
             probs = F.softmax(logits, dim=-1)
             next_id = torch.multinomial(probs, num_samples=1)
             idx = torch.cat((idx, next_id), dim=1)
+            if torch.all(next_id.eq(EOS)):
+                break
         return idx
 
 def parameter_count(model):
