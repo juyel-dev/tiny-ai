@@ -144,3 +144,83 @@ python scripts/evaluate_e002.py \
 ```
 
 **Training note:** E002 training now uses a disk-backed memory map, so the full multi-GB corpus is not loaded into RAM. The full TinyStories run is not executed in GitHub Actions and should be benchmarked locally before committing to the complete 5,000-step run. The model target itself remains only ~6.58 MiB of FP32 weights.
+
+
+## E004: BPE model from scratch
+
+E003.x showed that aggressively fine-tuning the 1.3M-parameter byte-level model did not produce useful instruction-following generations. E004 changes the representation and trains a new model from scratch.
+
+Tokenizer:
+- byte-level BPE
+- 2,048 vocabulary entries
+- `<pad>`, `<bos>`, `<eos>`, `<unk>`
+- tokenizer training uses the first 100,000 TinyStories examples plus the full compact Dolly source
+- the full training corpora remain disk-backed
+
+Model:
+- 4 Transformer blocks
+- 6 attention heads
+- 192 hidden size
+- 256-token context
+- tied input/output embeddings
+- **2,218,752 parameters**
+- **~8.46 MiB FP32 weights**
+
+BPE training is done with the Hugging Face Tokenizers library; its BPE trainer supports a target vocabulary size, special tokens, and an initial byte alphabet. citeturn638725search0turn638725search1
+
+### Prepare E004
+
+Install the new tokenizer dependency:
+
+```powershell
+python -m pip install -e ".[dev,data]"
+```
+
+Download Dolly only when needed:
+
+```powershell
+python scripts/fetch_dolly.py
+```
+
+Train the tokenizer and build disk-backed uint16 corpora:
+
+```powershell
+python scripts/prepare_e004.py \
+  --story-train data/processed/tinystories/train.txt \
+  --story-val data/processed/tinystories/val.txt \
+  --dolly-source data/raw/dolly/databricks-dolly-15k.jsonl \
+  --vocab-size 2048 \
+  --tokenizer-story-examples 100000 \
+  --out-dir data/processed/e004
+```
+
+The Dolly source is the official Databricks dataset, which currently lists 15,015 rows and CC BY-SA 3.0 licensing. citeturn768411search1turn768411search2
+
+### E004 smoke run
+
+```powershell
+python scripts/train_e004.py \
+  --story-train data/processed/e004/story_train.u16 \
+  --story-val data/processed/e004/story_val.u16 \
+  --instruction-train data/processed/e004/dolly_train.u16 \
+  --instruction-val data/processed/e004/dolly_val.u16 \
+  --steps 50 \
+  --batch-size 8 \
+  --lr 3e-4 \
+  --story-weight 0.75 \
+  --instruction-weight 0.25 \
+  --out checkpoints/e004_smoke.pt \
+  --best-out checkpoints/e004_smoke_best.pt
+```
+
+Evaluate:
+
+```powershell
+python scripts/evaluate_e004.py \
+  --checkpoint checkpoints/e004_smoke_best.pt \
+  --max-new-tokens 60 \
+  --temperature 0.7 \
+  --top-k 20
+```
+
+The first E004 run is deliberately a **50-step smoke experiment**. No long CPU training is justified until the tokenizer, loss curves, and generations are verified.
