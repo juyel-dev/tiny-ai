@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 from tiny_ai.inference import load_checkpoint
 from tiny_ai.model import fp32_weight_size_bytes, parameter_count
-from tiny_ai.tokenizer import EOS, PAD, ByteTokenizer
+from tiny_ai.tokenizer import PAD, ByteTokenizer
 
 
 def read_examples(path: Path, tokenizer: ByteTokenizer, block_size: int):
