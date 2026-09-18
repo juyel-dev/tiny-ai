@@ -74,11 +74,16 @@ def make_instruction_batch(rows, tokenizer, block_size, batch_size, device, rng)
 
 def instruction_loss(model, x, y):
     logits, _ = model(x)
-    return F.cross_entropy(
+    token_losses = F.cross_entropy(
         logits.reshape(-1, logits.size(-1)),
         y.reshape(-1),
         ignore_index=-100,
-    )
+        reduction="none",
+    ).view(y.size(0), -1)
+    active = y.ne(-100).sum(dim=1)
+    if torch.any(active == 0):
+        raise ValueError("A batch item has no response targets.")
+    return (token_losses.sum(dim=1) / active).mean()
 
 
 def response_only_eval(model, rows, tokenizer, block_size, batch_size, device, batches, rng):
