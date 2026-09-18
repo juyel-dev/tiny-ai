@@ -143,4 +143,4 @@ python scripts/evaluate_e002.py \
   --val data/processed/tinystories/val.txt
 ```
 
-**Training note:** the repository contains the reproducible experiment recipe, but the full TinyStories run is not executed in GitHub Actions. It needs a local machine/GPU with enough disk and memory for the multi-GB corpus and training workload. The model target itself remains only ~6.58 MiB of FP32 weights.
+**Training note:** E002 training now uses a disk-backed memory map, so the full multi-GB corpus is not loaded into RAM. The full TinyStories run is not executed in GitHub Actions and should be benchmarked locally before committing to the complete 5,000-step run. The model target itself remains only ~6.58 MiB of FP32 weights.
