@@ -23,10 +23,27 @@ def main():
     p.add_argument("--n-embd", type=int, default=160)
     p.add_argument("--block-size", type=int, default=256)
     p.add_argument("--out", default="checkpoints/e002.pt")
+    p.add_argument("--device", choices=["auto", "cpu", "xpu", "cuda"], default="auto")
     args = p.parse_args()
 
     torch.manual_seed(args.seed)
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if args.device == "auto":
+        if torch.xpu.is_available():
+            device = "xpu"
+        elif torch.cuda.is_available():
+            device = "cuda"
+        else:
+            device = "cpu"
+    elif args.device == "xpu":
+        if not torch.xpu.is_available():
+            raise RuntimeError("XPU requested but torch.xpu.is_available() is False.")
+        device = "xpu"
+    elif args.device == "cuda":
+        if not torch.cuda.is_available():
+            raise RuntimeError("CUDA requested but torch.cuda.is_available() is False.")
+        device = "cuda"
+    else:
+        device = "cpu"
     cfg = ModelConfig(
         block_size=args.block_size,
         n_layer=args.n_layer,
