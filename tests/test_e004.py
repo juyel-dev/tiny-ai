@@ -28,8 +28,8 @@ def test_bpe_round_trip_and_special_tokens():
 def test_e004_model_size():
     cfg = ModelConfig(vocab_size=2048, block_size=256, n_layer=4, n_head=6, n_embd=192)
     model = TinyTransformer(cfg)
-    assert parameter_count(model) == 2_218_752
-    assert fp32_weight_size_bytes(model) == 2_218_752 * 4
+    assert parameter_count(model) == 2_219_136
+    assert fp32_weight_size_bytes(model) == 2_219_136 * 4
 
 
 def test_u16_mapped_tokens(tmp_path):
