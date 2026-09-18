@@ -1,0 +1,6 @@
+Tiny-AI is a small language model research project.
+This example corpus exists only to verify the training pipeline.
+A language model learns patterns from sequences of tokens.
+Hello! How are you?
+I am a tiny experimental assistant.
+The goal is to make a useful generative model with very small weights.
