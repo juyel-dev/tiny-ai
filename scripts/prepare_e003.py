@@ -3,6 +3,8 @@ import json
 import random
 from pathlib import Path
 
+from tiny_ai.tokenizer import ByteTokenizer
+
 CHAT_EXAMPLES = [
     ("Hello!", "Hello!"),
     ("Hi!", "Hi! How are you?"),
@@ -71,7 +73,7 @@ def reservoir_sample(path: Path, count: int, seed: int) -> list[str]:
     return sample
 
 
-def make_story_examples(stories, seed: int):
+def make_story_examples(stories, seed: int, block_size: int):
     rng = random.Random(seed)
     templates = [
         "Tell me a story.",
@@ -80,7 +82,17 @@ def make_story_examples(stories, seed: int):
         "I would like a story.",
         "Tell me a little story.",
     ]
-    return [{"prompt": rng.choice(templates), "response": story} for story in stories]
+    tokenizer = ByteTokenizer()
+    examples = []
+    skipped = 0
+    for story in stories:
+        prompt = rng.choice(templates)
+        encoded = tokenizer.encode(f"User: {prompt}\nAssistant: " + story)
+        if len(encoded) > block_size:
+            skipped += 1
+            continue
+        examples.append({"prompt": prompt, "response": story})
+    return examples, skipped
 
 
 def write_jsonl(path: Path, examples):
@@ -98,6 +110,7 @@ def main():
     p.add_argument("--n-stories", type=int, default=1000)
     p.add_argument("--val-frac", type=float, default=0.05)
     p.add_argument("--max-chars", type=int, default=850)
+    p.add_argument("--block-size", type=int, default=256)
     p.add_argument("--seed", type=int, default=1337)
     p.add_argument("--out-dir", default="data/processed/e003")
     args = p.parse_args()
@@ -112,7 +125,8 @@ def main():
     if not stories:
         raise ValueError("No stories survived the --max-chars filter.")
 
-    examples = make_story_examples(stories, args.seed)
+    story_examples, skipped = make_story_examples(stories, args.seed, args.block_size)
+    examples = story_examples
     examples.extend({"prompt": prompt, "response": response} for prompt, response in CHAT_EXAMPLES)
 
     rng = random.Random(args.seed)
@@ -127,6 +141,8 @@ def main():
     write_jsonl(out / "val.jsonl", val)
 
     print(f"story examples: {len(stories):,}")
+    print(f"story examples kept: {len(story_examples):,}")
+    print(f"story examples skipped for block size: {skipped:,}")
     print(f"chat examples: {len(CHAT_EXAMPLES):,}")
     print(f"train examples: {len(train):,}")
     print(f"val examples: {len(val):,}")
