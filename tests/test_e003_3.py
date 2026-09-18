@@ -9,10 +9,12 @@ def test_encode_example_adds_eos_to_response_targets():
     item = encode_example(tok, "What is 2 + 2?", "", "4.", 256)
     assert item is not None
     _, targets = item
-    assert EOS in targets.tolist()
-    eos_index = targets.tolist().index(EOS)
-    assert eos_index > 0
-    assert all(value == -100 for value in targets.tolist()[:eos_index - 2])
+    target_ids = targets.tolist()
+    assert target_ids[-1] == EOS
+    prefix = tok.encode("User: What is 2 + 2?\nAssistant: ")
+    response_start = len(prefix) - 1
+    assert all(value == -100 for value in target_ids[:response_start])
+    assert any(value != -100 for value in target_ids[response_start:])
 
 
 def test_response_loss_is_finite():
