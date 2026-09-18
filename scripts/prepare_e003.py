@@ -1,0 +1,137 @@
+import argparse
+import json
+import random
+from pathlib import Path
+
+CHAT_EXAMPLES = [
+    ("Hello!", "Hello!"),
+    ("Hi!", "Hi! How are you?"),
+    ("Hey, how are you?", "I am doing well. How are you?"),
+    ("Good morning.", "Good morning!"),
+    ("Good night.", "Good night!"),
+    ("How are you?", "I am doing well. Thanks for asking."),
+    ("What can you do?", "I can chat with you and tell simple stories."),
+    ("Can you help me?", "Yes. Tell me what you need help with."),
+    ("Thank you.", "You are welcome!"),
+    ("Thanks!", "You are welcome!"),
+    ("Bye.", "Goodbye!"),
+    ("See you later.", "See you later!"),
+    ("Tell me something nice.", "You are doing great. Keep going!"),
+    ("I am happy today.", "That is nice to hear!"),
+    ("I am sad today.", "I am sorry you feel sad. I hope things get better."),
+    ("I am tired.", "Take a little rest and then continue when you are ready."),
+    ("What is your name?", "I am Tiny-AI."),
+    ("Are you a person?", "No. I am a small language model."),
+    ("Can we talk?", "Yes! What would you like to talk about?"),
+    ("I need a story.", "Sure! Ask me to tell you a story."),
+    ("Please tell me a short story.", "Once upon a time, a little child found a tiny bird and helped it get home."),
+    ("Can you tell a story?", "Yes! Tell me what kind of story you would like."),
+    ("Do you like stories?", "Yes. Stories are fun to read and tell."),
+    ("What should I do next?", "Tell me what you are working on, and we can start there."),
+    ("I made a mistake.", "That is okay. Mistakes help us learn."),
+    ("I am bored.", "Let us make up a little story."),
+    ("Can you repeat that?", "Sure. Please tell me which part you want me to repeat."),
+    ("Okay.", "Great!"),
+    ("Cool.", "Nice!"),
+    ("Interesting.", "I am glad you think so!"),
+    ("What is 2 + 2?", "4."),
+    ("What is 5 + 3?", "8."),
+    ("What is 10 - 4?", "6."),
+    ("What is 3 + 3?", "6."),
+]
+
+
+def iter_records(path: Path):
+    parts = []
+    with path.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            if line.strip():
+                parts.append(line)
+            elif parts:
+                record = "".join(parts).strip()
+                if record:
+                    yield record
+                parts = []
+        if parts:
+            record = "".join(parts).strip()
+            if record:
+                yield record
+
+
+def reservoir_sample(path: Path, count: int, seed: int) -> list[str]:
+    rng = random.Random(seed)
+    sample = []
+    for seen, record in enumerate(iter_records(path), start=1):
+        if len(sample) < count:
+            sample.append(record)
+            continue
+        j = rng.randrange(seen)
+        if j < count:
+            sample[j] = record
+    return sample
+
+
+def make_story_examples(stories, seed: int):
+    rng = random.Random(seed)
+    templates = [
+        "Tell me a story.",
+        "Can you tell me a short story?",
+        "Please tell me a story.",
+        "I would like a story.",
+        "Tell me a little story.",
+    ]
+    return [{"prompt": rng.choice(templates), "response": story} for story in stories]
+
+
+def write_jsonl(path: Path, examples):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as handle:
+        for example in examples:
+            handle.write(json.dumps(example, ensure_ascii=False) + "\n")
+
+
+def main():
+    p = argparse.ArgumentParser(
+        description="Prepare the local E002 corpus for E003 chat/instruction fine-tuning."
+    )
+    p.add_argument("--source", required=True, help="E002 processed training text file.")
+    p.add_argument("--n-stories", type=int, default=1000)
+    p.add_argument("--val-frac", type=float, default=0.05)
+    p.add_argument("--max-chars", type=int, default=850)
+    p.add_argument("--seed", type=int, default=1337)
+    p.add_argument("--out-dir", default="data/processed/e003")
+    args = p.parse_args()
+
+    if not 0 < args.val_frac < 0.5:
+        raise ValueError("--val-frac must be between 0 and 0.5")
+
+    stories = [
+        story for story in reservoir_sample(Path(args.source), args.n_stories, args.seed)
+        if len(story.encode("utf-8")) <= args.max_chars
+    ]
+    if not stories:
+        raise ValueError("No stories survived the --max-chars filter.")
+
+    examples = make_story_examples(stories, args.seed)
+    examples.extend({"prompt": prompt, "response": response} for prompt, response in CHAT_EXAMPLES)
+
+    rng = random.Random(args.seed)
+    rng.shuffle(examples)
+
+    val_count = max(1, round(len(examples) * args.val_frac))
+    val = examples[:val_count]
+    train = examples[val_count:]
+
+    out = Path(args.out_dir)
+    write_jsonl(out / "train.jsonl", train)
+    write_jsonl(out / "val.jsonl", val)
+
+    print(f"story examples: {len(stories):,}")
+    print(f"chat examples: {len(CHAT_EXAMPLES):,}")
+    print(f"train examples: {len(train):,}")
+    print(f"val examples: {len(val):,}")
+    print(f"output: {out}")
+
+
+if __name__ == "__main__":
+    main()
