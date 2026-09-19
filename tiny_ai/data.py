@@ -1,10 +1,22 @@
 from __future__ import annotations
 
+import array
 import mmap
 import struct
+import sys
 from pathlib import Path
 
 import torch
+
+# array.array('H', ...).tofile() writes in native byte order. Every
+# platform this project targets (x86_64/ARM64 Linux, incl. GitHub Actions
+# runners) is little-endian, matching the explicit "<H" reads in
+# MappedTokenIds below -- fail loudly instead of silently writing a file
+# MappedTokenIds would misread.
+assert sys.byteorder == "little", (
+    "write_token_ids assumes a little-endian platform to match MappedTokenIds' "
+    "explicit little-endian reads; this platform is big-endian."
+)
 
 
 class MappedTokens:
@@ -98,12 +110,22 @@ class MappedTokenIds:
 
 
 def write_token_ids(ids, path: str | Path) -> None:
-    """Write token ids to disk as little-endian uint16, for MappedTokenIds."""
-    ids = list(ids)
-    if ids and max(ids) >= MappedTokenIds.MAX_VOCAB_SIZE:
-        raise ValueError("Token id exceeds uint16 range; MappedTokenIds cannot store it.")
+    """Write token ids to disk as little-endian uint16, for MappedTokenIds.
+
+    Uses array.array rather than struct.pack(f"<{n}H", *ids) -- unpacking
+    a huge list as function arguments is memory-hungry, and array.array
+    stores ids in a compact C buffer instead of one Python int object
+    each. Still materializes the whole list at once, so for a corpus too
+    large to hold in memory, encode and write in chunks instead (see
+    scripts/tokenize_corpus.py).
+    """
+    arr = array.array("H")
+    try:
+        arr.extend(ids)
+    except OverflowError as e:
+        raise ValueError("Token id exceeds uint16 range; MappedTokenIds cannot store it.") from e
     with Path(path).open("wb") as f:
-        f.write(struct.pack(f"<{len(ids)}H", *ids))
+        arr.tofile(f)
 
 
 def load_text(path: str) -> torch.Tensor:
