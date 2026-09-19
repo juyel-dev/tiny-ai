@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import mmap
+import struct
 from pathlib import Path
 
 import torch
@@ -39,6 +40,72 @@ class MappedTokens:
         self.close()
 
 
+class MappedTokenIds:
+    """Disk-backed token-id sequence for vocabularies larger than 256.
+
+    ``MappedTokens`` stores one byte per token, which only works for the
+    raw-byte tokenizer (vocab_size <= 256). A BPE tokenizer's vocabulary
+    is larger than one byte can address, so token ids are stored instead
+    as little-endian uint16 (2 bytes each, max vocab 65,536 -- far above
+    anything this repo trains). Still mmap-backed, so training doesn't
+    need to load the whole corpus into memory.
+    """
+
+    ITEM_SIZE = 2
+    MAX_VOCAB_SIZE = 1 << 16
+
+    def __init__(self, path: str | Path):
+        self.path = Path(path)
+        self._file = self.path.open("rb")
+        size_bytes = self.path.stat().st_size
+        if size_bytes == 0:
+            self._file.close()
+            raise ValueError(f"Token file is empty: {self.path}")
+        if size_bytes % self.ITEM_SIZE != 0:
+            self._file.close()
+            raise ValueError(
+                f"Token file size ({size_bytes} bytes) is not a multiple of "
+                f"{self.ITEM_SIZE} (expected uint16 token ids): {self.path}"
+            )
+        self._size = size_bytes // self.ITEM_SIZE
+        self._map = mmap.mmap(self._file.fileno(), 0, access=mmap.ACCESS_READ)
+
+    def __len__(self) -> int:
+        return self._size
+
+    def __getitem__(self, index):
+        if isinstance(index, slice):
+            start, stop, step = index.indices(self._size)
+            raw = self._map[start * self.ITEM_SIZE:stop * self.ITEM_SIZE]
+            values = list(struct.unpack(f"<{stop - start}H", raw))
+            return values[::step] if step != 1 else values
+        raw = self._map[index * self.ITEM_SIZE:(index + 1) * self.ITEM_SIZE]
+        return struct.unpack("<H", raw)[0]
+
+    def close(self) -> None:
+        if getattr(self, "_map", None) is not None:
+            self._map.close()
+            self._map = None
+        if getattr(self, "_file", None) is not None:
+            self._file.close()
+            self._file = None
+
+    def __enter__(self) -> "MappedTokenIds":
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        self.close()
+
+
+def write_token_ids(ids, path: str | Path) -> None:
+    """Write token ids to disk as little-endian uint16, for MappedTokenIds."""
+    ids = list(ids)
+    if ids and max(ids) >= MappedTokenIds.MAX_VOCAB_SIZE:
+        raise ValueError("Token id exceeds uint16 range; MappedTokenIds cannot store it.")
+    with Path(path).open("wb") as f:
+        f.write(struct.pack(f"<{len(ids)}H", *ids))
+
+
 def load_text(path: str) -> torch.Tensor:
     from .tokenizer import ByteTokenizer
 
@@ -62,9 +129,12 @@ def get_batch(tokens, block_size: int, batch_size: int, device: str):
     ys = []
     for start in starts.tolist():
         start = int(start)
-        chunk = bytes(tokens[start:start + block_size + 1])
-        xs.append(torch.tensor(list(chunk[:-1]), dtype=torch.long))
-        ys.append(torch.tensor(list(chunk[1:]), dtype=torch.long))
+        chunk = tokens[start:start + block_size + 1]
+        # MappedTokens (byte tokenizer) yields a bytes-like slice;
+        # MappedTokenIds (BPE tokenizer) yields a list[int] already.
+        chunk = list(chunk) if not isinstance(chunk, list) else chunk
+        xs.append(torch.tensor(chunk[:-1], dtype=torch.long))
+        ys.append(torch.tensor(chunk[1:], dtype=torch.long))
 
     x = torch.stack(xs).to(device)
     y = torch.stack(ys).to(device)

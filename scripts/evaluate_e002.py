@@ -2,7 +2,8 @@ import argparse
 
 import torch
 
-from tiny_ai.data import MappedTokens, get_batch
+from tiny_ai.bpe_tokenizer import BPETokenizer
+from tiny_ai.data import MappedTokenIds, MappedTokens, get_batch
 from tiny_ai.inference import load_checkpoint, generate
 
 
@@ -18,7 +19,12 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model, tokenizer = load_checkpoint(args.checkpoint, device=device)
 
-    with MappedTokens(args.val) as tokens:
+    # --val must be encoded the same way the checkpoint was trained: raw
+    # bytes for ByteTokenizer, or uint16 ids (scripts/tokenize_corpus.py)
+    # for a BPE checkpoint.
+    token_cls = MappedTokenIds if isinstance(tokenizer, BPETokenizer) else MappedTokens
+
+    with token_cls(args.val) as tokens:
         losses = []
         with torch.no_grad():
             for _ in range(args.batches):

@@ -1,0 +1,161 @@
+name: train-e002
+
+# Manually triggered training run for E002, meant for GitHub-hosted CPU
+# runners (no GPU). Unlimited free minutes on standard Linux runners for
+# public repos, but jobs are capped at 6 hours (timeout-minutes below stays
+# under that with a safety margin) and have no GPU, so treat this as
+# convenient background compute for a tiny model, not a substitute for a
+# real training box.
+#
+# Progress survives a timeout or cancellation: training saves a resumable
+# checkpoint (weights + optimizer state + step) every --save-every steps,
+# and the artifact-upload step below runs with `if: always()` so whatever
+# exists is uploaded even if the job gets killed mid-run. To continue a
+# run that didn't finish, re-trigger this workflow with
+# `resume_from_run_id` set to the earlier run's ID (visible in the Actions
+# tab URL) -- it downloads that run's checkpoint artifact and resumes from
+# wherever it left off.
+
+on:
+  workflow_dispatch:
+    inputs:
+      steps:
+        description: "Total training steps (the target for THIS invocation, not additional steps on top of a resume)"
+        default: "5000"
+      tokenizer:
+        description: "byte or bpe (see README: BPE is the recommended fix for E002's garbage-output issue)"
+        default: "bpe"
+      bpe_vocab_size:
+        description: "Only used when tokenizer=bpe"
+        default: "4096"
+      bpe_max_chars:
+        description: "Optional: cap characters scanned when training the BPE tokenizer, for speed. Empty = use the full corpus."
+        default: ""
+      n_layer:
+        default: "4"
+      n_head:
+        default: "4"
+      n_embd:
+        default: "160"
+      block_size:
+        default: "256"
+      batch_size:
+        default: "16"
+      lr:
+        default: "3e-4"
+      warmup_steps:
+        default: "200"
+      save_every:
+        description: "Steps between resumable checkpoints. 0 disables periodic saving -- NOT recommended for long runs, since a timeout would lose everything."
+        default: "250"
+      resume_from_run_id:
+        description: "Optional: an earlier run ID of this workflow, to resume its checkpoint from"
+        default: ""
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e '.[data,dev]'
+
+      - name: Fetch TinyStories (pinned revision, SHA-256 verified)
+        run: python scripts/fetch_tinystories.py --split both
+
+      - name: Prepare corpus (normalize, dedupe, preserve official split)
+        run: |
+          python scripts/prepare_corpus.py \
+            --train data/raw/tinystories/TinyStories-train.txt \
+            --val data/raw/tinystories/TinyStories-valid.txt \
+            --out-dir data/processed/tinystories
+
+      - name: Download checkpoint to resume, if requested
+        if: ${{ inputs.resume_from_run_id != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: e002-checkpoint
+          path: checkpoints
+          run-id: ${{ inputs.resume_from_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Train BPE tokenizer
+        if: ${{ inputs.tokenizer == 'bpe' && inputs.resume_from_run_id == '' }}
+        run: |
+          mkdir -p tokenizer
+          MAX_CHARS_ARG=""
+          if [ -n "${{ inputs.bpe_max_chars }}" ]; then
+            MAX_CHARS_ARG="--max-chars ${{ inputs.bpe_max_chars }}"
+          fi
+          python scripts/train_tokenizer.py \
+            --corpus data/processed/tinystories/train.txt \
+            --vocab-size ${{ inputs.bpe_vocab_size }} \
+            --out tokenizer/e002_bpe.json \
+            $MAX_CHARS_ARG
+
+      - name: Restore BPE tokenizer from the resumed run
+        if: ${{ inputs.tokenizer == 'bpe' && inputs.resume_from_run_id != '' }}
+        run: |
+          # The tokenizer travels inside the checkpoint artifact so a
+          # resumed run always encodes with the exact tokenizer the
+          # original run trained -- a mismatched tokenizer would silently
+          # corrupt training.
+          mkdir -p tokenizer
+          cp checkpoints/tokenizer.json tokenizer/e002_bpe.json
+
+      - name: Encode corpus with the BPE tokenizer
+        if: ${{ inputs.tokenizer == 'bpe' }}
+        run: |
+          python scripts/tokenize_corpus.py --tokenizer tokenizer/e002_bpe.json \
+            --input data/processed/tinystories/train.txt \
+            --output data/processed/tinystories/train.bpe.bin
+          python scripts/tokenize_corpus.py --tokenizer tokenizer/e002_bpe.json \
+            --input data/processed/tinystories/val.txt \
+            --output data/processed/tinystories/val.bpe.bin
+
+      - name: Train
+        run: |
+          mkdir -p checkpoints
+          TRAIN_FILE=data/processed/tinystories/train.txt
+          VAL_FILE=data/processed/tinystories/val.txt
+          TOK_ARGS=""
+          if [ "${{ inputs.tokenizer }}" = "bpe" ]; then
+            TRAIN_FILE=data/processed/tinystories/train.bpe.bin
+            VAL_FILE=data/processed/tinystories/val.bpe.bin
+            TOK_ARGS="--tokenizer bpe --bpe-merges tokenizer/e002_bpe.json"
+          fi
+          RESUME_ARGS=""
+          if [ -f checkpoints/e002.resume.pt ]; then
+            RESUME_ARGS="--resume checkpoints/e002.resume.pt"
+          elif [ -f checkpoints/e002.pt ]; then
+            RESUME_ARGS="--resume checkpoints/e002.pt"
+          fi
+          python scripts/train_e002.py \
+            --train "$TRAIN_FILE" --val "$VAL_FILE" \
+            --steps ${{ inputs.steps }} \
+            --n-layer ${{ inputs.n_layer }} --n-head ${{ inputs.n_head }} \
+            --n-embd ${{ inputs.n_embd }} --block-size ${{ inputs.block_size }} \
+            --batch-size ${{ inputs.batch_size }} --lr ${{ inputs.lr }} \
+            --warmup-steps ${{ inputs.warmup_steps }} \
+            --save-every ${{ inputs.save_every }} \
+            --resume-out checkpoints/e002.resume.pt \
+            --out checkpoints/e002.pt \
+            $TOK_ARGS $RESUME_ARGS \
+            --device cpu | tee checkpoints/train.log
+
+      - name: Stash the tokenizer alongside the checkpoint, for future resumes
+        if: ${{ inputs.tokenizer == 'bpe' }}
+        run: cp tokenizer/e002_bpe.json checkpoints/tokenizer.json
+
+      # Runs even on timeout/cancellation, so an interrupted run still
+      # yields a resumable checkpoint instead of losing everything.
+      - name: Upload checkpoint + log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e002-checkpoint
+          path: checkpoints/
+          retention-days: 14

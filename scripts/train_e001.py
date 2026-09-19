@@ -36,7 +36,7 @@ def main():
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    torch.save({"config": vars(cfg), "model": model.state_dict()}, out)
+    torch.save({"config": vars(cfg), "model": model.state_dict(), "tokenizer": {"type": "byte"}}, out)
     print(f"saved: {out}")
     print(f"device: {device}")
     print(f"parameters: {parameter_count(model):,}")

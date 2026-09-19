@@ -144,3 +144,62 @@ python scripts/evaluate_e002.py \
 ```
 
 **Training note:** E002 training now uses a disk-backed memory map, so the full multi-GB corpus is not loaded into RAM. The full TinyStories run is not executed in GitHub Actions and should be benchmarked locally before committing to the complete 5,000-step run. The model target itself remains only ~6.58 MiB of FP32 weights.
+
+## Why does generation look like garbage?
+
+Two common causes, roughly in order of likelihood:
+
+1. **You trained on `data/example.txt`.** That file is a pipeline smoke-test corpus (a few hundred bytes), not training data — see the note in Quick start. No model, tiny or otherwise, learns language from that. Use E002 with a real corpus (TinyStories or your own) instead.
+2. **Byte-level tokenization is expensive for a model this small.** The default tokenizer maps text to raw UTF-8 bytes, so a single English word costs 4–8 tokens instead of 1. At E002's ~1.3M parameters, most of that budget goes into re-deriving spelling rather than learning structure. The BPE tokenizer below is the single highest-leverage fix for coherence at a fixed parameter budget — try it before scaling up model size.
+
+Also check: are you actually training long enough? 5,000 steps at batch size 16 is ~20M bytes of exposure — undertrained relative to a multi-hundred-MB corpus. Watch `val_loss` in the training log; if it's still dropping steadily when training stops, run more steps before concluding the architecture is the problem.
+
+## Optional: BPE tokenizer
+
+`tiny_ai/bpe_tokenizer.py` is a small, dependency-free byte-level BPE tokenizer trained directly on your corpus (no network access, no model hub — fully reproducible from `(corpus file, vocab size)`). It keeps the byte tokenizer's lossless fallback for anything unseen, while letting common substrings collapse to a single token.
+
+```bash
+# 1. Train a tokenizer on your prepared corpus
+python scripts/train_tokenizer.py \
+  --corpus data/processed/tinystories/train.txt \
+  --vocab-size 4096 \
+  --out tokenizer/e002_bpe4096.json
+
+# 2. Encode train/val splits into binary token-id files
+python scripts/tokenize_corpus.py \
+  --tokenizer tokenizer/e002_bpe4096.json \
+  --input data/processed/tinystories/train.txt \
+  --output data/processed/tinystories/train.bpe.bin
+python scripts/tokenize_corpus.py \
+  --tokenizer tokenizer/e002_bpe4096.json \
+  --input data/processed/tinystories/val.txt \
+  --output data/processed/tinystories/val.bpe.bin
+
+# 3. Train with the BPE tokenizer (also picks up LR warmup + cosine decay, see below)
+python scripts/train_e002.py \
+  --train data/processed/tinystories/train.bpe.bin \
+  --val data/processed/tinystories/val.bpe.bin \
+  --tokenizer bpe --bpe-merges tokenizer/e002_bpe4096.json \
+  --steps 5000 \
+  --out checkpoints/e002_bpe.pt
+```
+
+`scripts/evaluate_e002.py` and `scripts/chat.py` read the tokenizer type back out of the checkpoint automatically — nothing to pass at generation time. Checkpoints saved before this existed still load as the original byte tokenizer, unchanged.
+
+Token ids above 255 don't fit in one byte, so BPE-encoded corpora are stored as little-endian uint16 (`tiny_ai.data.MappedTokenIds`) instead of the raw-byte `.txt` files `MappedTokens` reads — that's what `tokenize_corpus.py`'s `.bin` output is for.
+
+## Learning-rate schedule
+
+`scripts/train_e002.py` now uses linear warmup followed by cosine decay (`tiny_ai/schedule.py`) instead of a constant LR, controlled by `--warmup-steps` (default 200) and `--min-lr-ratio` (default 0.1, i.e. decays to 10% of `--lr`). This is a training-loop change only — it applies regardless of which tokenizer you use.
+
+## Training on GitHub Actions
+
+`.github/workflows/train_e002.yml` is a manually-triggered workflow (Actions tab → "train-e002" → Run workflow) that runs the E002 pipeline end-to-end on a GitHub-hosted CPU runner: fetch TinyStories, prepare the corpus, optionally train a BPE tokenizer, train, upload the checkpoint as an artifact.
+
+Worth knowing before you use it:
+- **No GPU.** GitHub-hosted runners are CPU-only. Fine for E002's current scale (~1.3M params), not something you'd want for a much bigger model.
+- **Free, but capped.** Standard Linux runners are unlimited-minutes on public repos, but a single job is capped at 6 hours; the workflow sets `timeout-minutes: 340` to leave a safety margin.
+- **Progress survives a timeout.** `--save-every` (default 250 steps) writes a resumable checkpoint — weights, optimizer state, and step count — and the artifact-upload step runs with `if: always()`, so a killed job still yields something to resume from. Re-run the workflow with `resume_from_run_id` set to the earlier run's ID to continue.
+- **BPE tokenizer training is pure Python** (see above) and its cost scales with the number of distinct words in the corpus, not corpus size — but TinyStories' full training split is large enough that this can still take a while. Use the `bpe_max_chars` input to cap it, or time `scripts/train_tokenizer.py` locally on a subset first before committing to a full run.
+
+The resulting checkpoint is only downloadable from the workflow's artifact, not automatically committed to the repo — download it via the Actions run page and check it into `checkpoints/` (or wherever you keep them) yourself if you want it in version control.
