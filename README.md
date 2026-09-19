@@ -191,3 +191,15 @@ Token ids above 255 don't fit in one byte, so BPE-encoded corpora are stored as 
 ## Learning-rate schedule
 
 `scripts/train_e002.py` now uses linear warmup followed by cosine decay (`tiny_ai/schedule.py`) instead of a constant LR, controlled by `--warmup-steps` (default 200) and `--min-lr-ratio` (default 0.1, i.e. decays to 10% of `--lr`). This is a training-loop change only — it applies regardless of which tokenizer you use.
+
+## Training on GitHub Actions
+
+`.github/workflows/train_e002.yml` is a manually-triggered workflow (Actions tab → "train-e002" → Run workflow) that runs the E002 pipeline end-to-end on a GitHub-hosted CPU runner: fetch TinyStories, prepare the corpus, optionally train a BPE tokenizer, train, upload the checkpoint as an artifact.
+
+Worth knowing before you use it:
+- **No GPU.** GitHub-hosted runners are CPU-only. Fine for E002's current scale (~1.3M params), not something you'd want for a much bigger model.
+- **Free, but capped.** Standard Linux runners are unlimited-minutes on public repos, but a single job is capped at 6 hours; the workflow sets `timeout-minutes: 340` to leave a safety margin.
+- **Progress survives a timeout.** `--save-every` (default 250 steps) writes a resumable checkpoint — weights, optimizer state, and step count — and the artifact-upload step runs with `if: always()`, so a killed job still yields something to resume from. Re-run the workflow with `resume_from_run_id` set to the earlier run's ID to continue.
+- **BPE tokenizer training is pure Python** (see above) and its cost scales with the number of distinct words in the corpus, not corpus size — but TinyStories' full training split is large enough that this can still take a while. Use the `bpe_max_chars` input to cap it, or time `scripts/train_tokenizer.py` locally on a subset first before committing to a full run.
+
+The resulting checkpoint is only downloadable from the workflow's artifact, not automatically committed to the repo — download it via the Actions run page and check it into `checkpoints/` (or wherever you keep them) yourself if you want it in version control.

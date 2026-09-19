@@ -35,7 +35,18 @@ def main():
     p.add_argument("--bpe-merges", default=None,
                     help="Path to a tokenizer saved by scripts/train_tokenizer.py. "
                          "Required when --tokenizer bpe.")
-    p.add_argument("--out", default="checkpoints/e002.pt")
+    p.add_argument("--out", default="checkpoints/e002.pt",
+                    help="Final checkpoint path, written when training completes all --steps.")
+    p.add_argument("--save-every", type=int, default=0,
+                    help="Also write a resumable checkpoint every N steps, to --resume-out. "
+                         "0 disables periodic saving. Use this for long/unattended runs "
+                         "(e.g. GitHub Actions) that might be interrupted before finishing.")
+    p.add_argument("--resume-out", default="checkpoints/e002.resume.pt",
+                    help="Where periodic checkpoints are written (overwritten each time).")
+    p.add_argument("--resume", default=None,
+                    help="Resume training from a checkpoint written by --save-every "
+                         "(or --out/this script). Model architecture and tokenizer flags "
+                         "must match the run that produced it.")
     p.add_argument("--device", choices=["auto", "cpu", "xpu", "cuda"], default="auto")
     args = p.parse_args()
 
@@ -75,8 +86,56 @@ def main():
         n_embd=args.n_embd,
     )
 
+    resume_payload = None
+    start_step = 1
+    if args.resume:
+        resume_payload = torch.load(args.resume, map_location=device)
+        resumed_cfg = ModelConfig(**resume_payload["config"])
+        if vars(resumed_cfg) != vars(cfg):
+            raise RuntimeError(
+                "Model config in --resume checkpoint does not match the config "
+                f"built from CLI flags.\n  checkpoint: {vars(resumed_cfg)}\n  CLI args:   {vars(cfg)}\n"
+                "Pass the same --n-layer/--n-head/--n-embd/--block-size/--tokenizer/--bpe-merges "
+                "used for the original run."
+            )
+        start_step = resume_payload.get("step", 0) + 1
+        if start_step > args.steps:
+            print(f"checkpoint already at step {start_step - 1} >= --steps {args.steps}; nothing to do.")
+            return
+
+    def build_tokenizer_payload():
+        if bpe_tokenizer is not None:
+            return {
+                "type": "bpe",
+                "merges": [list(pair) for pair in bpe_tokenizer.merges],
+                "vocab_size": bpe_tokenizer.vocab_size,
+            }
+        return {"type": "byte"}
+
     model = TinyTransformer(cfg).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.01)
+
+    if resume_payload is not None:
+        model.load_state_dict(resume_payload["model"])
+        if "optimizer" in resume_payload:
+            optimizer.load_state_dict(resume_payload["optimizer"])
+        else:
+            print("warning: --resume checkpoint has no optimizer state (older format); "
+                  "resuming with a freshly-initialized optimizer.")
+        print(f"resumed from {args.resume} at step {start_step - 1}")
+
+    def save_checkpoint(path: Path, step: int, include_optimizer: bool):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "config": vars(cfg),
+            "model": model.state_dict(),
+            "tokenizer": build_tokenizer_payload(),
+            "step": step,
+        }
+        if include_optimizer:
+            payload["optimizer"] = optimizer.state_dict()
+        torch.save(payload, path)
+
     token_cls = MappedTokenIds if args.tokenizer == "bpe" else MappedTokens
 
     def eval_loss(val_tokens):
@@ -93,7 +152,7 @@ def main():
     with token_cls(args.train) as train_tokens:
         val_ctx = token_cls(args.val) if args.val else None
         try:
-            for step in range(1, args.steps + 1):
+            for step in range(start_step, args.steps + 1):
                 lr = warmup_cosine_lr(
                     step,
                     base_lr=args.lr,
@@ -117,18 +176,12 @@ def main():
                         message += f" | val_loss {eval_loss(val_ctx):.4f}"
                     print(message, flush=True)
 
+                if args.save_every and (step % args.save_every == 0) and step != args.steps:
+                    save_checkpoint(Path(args.resume_out), step, include_optimizer=True)
+                    print(f"checkpoint: {args.resume_out} (step {step})", flush=True)
+
             out = Path(args.out)
-            out.parent.mkdir(parents=True, exist_ok=True)
-            payload = {"config": vars(cfg), "model": model.state_dict()}
-            if bpe_tokenizer is not None:
-                payload["tokenizer"] = {
-                    "type": "bpe",
-                    "merges": [list(pair) for pair in bpe_tokenizer.merges],
-                    "vocab_size": bpe_tokenizer.vocab_size,
-                }
-            else:
-                payload["tokenizer"] = {"type": "byte"}
-            torch.save(payload, out)
+            save_checkpoint(out, args.steps, include_optimizer=False)
             print(f"saved: {out}")
             print(f"device: {device}")
             print(f"parameters: {parameter_count(model):,}")
