@@ -135,12 +135,27 @@ class BPETokenizer:
         return 256 + len(self.merges) + 2
 
     def encode(self, text: str, add_bos: bool = False, add_eos: bool = False) -> list[int]:
+        # Rank-based greedy merge: at each step, merge the lowest-rank
+        # (earliest-learned) applicable pair, then rescan. Cost per word
+        # scales with word length, not with the total number of learned
+        # merges -- unlike naively re-applying every merge in order, which
+        # is O(len(merges)) per word regardless of word length and becomes
+        # the dominant cost once vocab_size is in the thousands.
+        ranks = {pair: i for i, pair in enumerate(self.merges)}
         ids: list[int] = []
         for token in _pretokenize(text):
             symbols = list(token.encode("utf-8"))
-            for offset, pair in enumerate(self.merges):
-                merged_id = 256 + offset
-                symbols = _merge_pair(symbols, pair, merged_id)
+            while len(symbols) > 1:
+                best_rank = None
+                best_pair = None
+                for a, b in zip(symbols, symbols[1:]):
+                    r = ranks.get((a, b))
+                    if r is not None and (best_rank is None or r < best_rank):
+                        best_rank = r
+                        best_pair = (a, b)
+                if best_pair is None:
+                    break
+                symbols = _merge_pair(symbols, best_pair, 256 + best_rank)
             ids.extend(symbols)
         if add_bos:
             ids.insert(0, self.bos_id)

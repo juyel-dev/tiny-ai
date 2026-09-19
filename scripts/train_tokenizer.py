@@ -35,15 +35,17 @@ def main():
     p.add_argument("--out", default="tokenizer/bpe.json")
     p.add_argument("--max-chars", type=int, default=None,
                     help="Optional cap on how many characters of the corpus to train on, "
-                         "for speed on very large corpora. Training cost scales with the "
-                         "number of distinct words, so this is usually only needed for "
-                         "corpora with a huge and long-tailed vocabulary.")
+                         "for speed AND memory on very large corpora (only that many "
+                         "characters are read off disk, not the whole file). Training "
+                         "cost scales with the number of distinct words, so this is "
+                         "usually only needed for corpora with a huge, long-tailed "
+                         "vocabulary -- but on a multi-GB corpus, skipping it also means "
+                         "reading the entire file into memory at once.")
     p.add_argument("-v", "--verbose", action="store_true")
     args = p.parse_args()
 
-    text = Path(args.corpus).read_text(encoding="utf-8")
-    if args.max_chars is not None:
-        text = text[:args.max_chars]
+    with open(args.corpus, "r", encoding="utf-8") as f:
+        text = f.read(args.max_chars) if args.max_chars is not None else f.read()
 
     tokenizer = train_bpe(text, args.vocab_size, verbose=args.verbose)
 
