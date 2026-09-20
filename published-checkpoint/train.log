@@ -1,0 +1,224 @@
+step 00001 | lr 1.00e-06 | loss 8.4193 | val_loss 8.4188
+step 00100 | lr 1.00e-04 | loss 5.9775
+step 00200 | lr 2.00e-04 | loss 4.0004
+step 00300 | lr 3.00e-04 | loss 3.4000
+step 00400 | lr 3.00e-04 | loss 3.4499
+step 00500 | lr 3.00e-04 | loss 3.2994 | val_loss 3.2851
+step 00600 | lr 3.00e-04 | loss 3.2290
+step 00700 | lr 3.00e-04 | loss 3.1722
+step 00800 | lr 3.00e-04 | loss 2.9444
+step 00900 | lr 2.99e-04 | loss 2.8584
+step 01000 | lr 2.99e-04 | loss 2.6589 | val_loss 2.6979
+checkpoint: checkpoints/e002.resume.pt (step 1000)
+step 01100 | lr 2.99e-04 | loss 2.6804
+step 01200 | lr 2.99e-04 | loss 2.5118
+step 01300 | lr 2.98e-04 | loss 2.4621
+step 01400 | lr 2.98e-04 | loss 2.4265
+step 01500 | lr 2.98e-04 | loss 2.3743 | val_loss 2.4151
+step 01600 | lr 2.97e-04 | loss 2.2270
+step 01700 | lr 2.97e-04 | loss 2.3920
+step 01800 | lr 2.96e-04 | loss 2.2105
+step 01900 | lr 2.96e-04 | loss 2.1505
+step 02000 | lr 2.95e-04 | loss 2.3088 | val_loss 2.2620
+checkpoint: checkpoints/e002.resume.pt (step 2000)
+step 02100 | lr 2.94e-04 | loss 2.2988
+step 02200 | lr 2.94e-04 | loss 2.2305
+step 02300 | lr 2.93e-04 | loss 2.2332
+step 02400 | lr 2.93e-04 | loss 2.1357
+step 02500 | lr 2.92e-04 | loss 2.1511 | val_loss 2.1348
+step 02600 | lr 2.91e-04 | loss 1.9265
+step 02700 | lr 2.90e-04 | loss 2.1264
+step 02800 | lr 2.89e-04 | loss 2.1337
+step 02900 | lr 2.89e-04 | loss 2.1754
+step 03000 | lr 2.88e-04 | loss 2.0917 | val_loss 2.0543
+checkpoint: checkpoints/e002.resume.pt (step 3000)
+step 03100 | lr 2.87e-04 | loss 1.9886
+step 03200 | lr 2.86e-04 | loss 1.9915
+step 03300 | lr 2.85e-04 | loss 2.0782
+step 03400 | lr 2.84e-04 | loss 2.0618
+step 03500 | lr 2.83e-04 | loss 1.9400 | val_loss 1.9776
+step 03600 | lr 2.82e-04 | loss 1.9783
+step 03700 | lr 2.81e-04 | loss 1.9074
+step 03800 | lr 2.80e-04 | loss 1.8000
+step 03900 | lr 2.78e-04 | loss 1.9838
+step 04000 | lr 2.77e-04 | loss 1.9024 | val_loss 1.9380
+checkpoint: checkpoints/e002.resume.pt (step 4000)
+step 04100 | lr 2.76e-04 | loss 1.9846
+step 04200 | lr 2.75e-04 | loss 1.8925
+step 04300 | lr 2.73e-04 | loss 2.0106
+step 04400 | lr 2.72e-04 | loss 1.9128
+step 04500 | lr 2.71e-04 | loss 1.9254 | val_loss 1.8641
+step 04600 | lr 2.69e-04 | loss 1.7490
+step 04700 | lr 2.68e-04 | loss 1.8194
+step 04800 | lr 2.67e-04 | loss 1.8572
+step 04900 | lr 2.65e-04 | loss 1.9219
+step 05000 | lr 2.64e-04 | loss 1.8838 | val_loss 1.8638
+checkpoint: checkpoints/e002.resume.pt (step 5000)
+step 05100 | lr 2.62e-04 | loss 1.7890
+step 05200 | lr 2.61e-04 | loss 1.7921
+step 05300 | lr 2.59e-04 | loss 1.7936
+step 05400 | lr 2.58e-04 | loss 1.8342
+step 05500 | lr 2.56e-04 | loss 1.6526 | val_loss 1.8214
+step 05600 | lr 2.55e-04 | loss 1.8697
+step 05700 | lr 2.53e-04 | loss 1.8129
+step 05800 | lr 2.51e-04 | loss 1.7926
+step 05900 | lr 2.50e-04 | loss 1.7889
+step 06000 | lr 2.48e-04 | loss 1.8132 | val_loss 1.7735
+checkpoint: checkpoints/e002.resume.pt (step 6000)
+step 06100 | lr 2.46e-04 | loss 1.7608
+step 06200 | lr 2.45e-04 | loss 1.6376
+step 06300 | lr 2.43e-04 | loss 1.7530
+step 06400 | lr 2.41e-04 | loss 1.7335
+step 06500 | lr 2.39e-04 | loss 1.7954 | val_loss 1.7363
+step 06600 | lr 2.37e-04 | loss 1.6773
+step 06700 | lr 2.36e-04 | loss 1.7144
+step 06800 | lr 2.34e-04 | loss 1.7679
+step 06900 | lr 2.32e-04 | loss 1.7999
+step 07000 | lr 2.30e-04 | loss 1.7217 | val_loss 1.7228
+checkpoint: checkpoints/e002.resume.pt (step 7000)
+step 07100 | lr 2.28e-04 | loss 1.7700
+step 07200 | lr 2.26e-04 | loss 1.7995
+step 07300 | lr 2.24e-04 | loss 1.7392
+step 07400 | lr 2.22e-04 | loss 1.6784
+step 07500 | lr 2.20e-04 | loss 1.7642 | val_loss 1.7101
+step 07600 | lr 2.18e-04 | loss 1.6567
+step 07700 | lr 2.16e-04 | loss 1.6467
+step 07800 | lr 2.14e-04 | loss 1.7986
+step 07900 | lr 2.12e-04 | loss 1.5886
+step 08000 | lr 2.10e-04 | loss 1.5951 | val_loss 1.6778
+checkpoint: checkpoints/e002.resume.pt (step 8000)
+step 08100 | lr 2.08e-04 | loss 1.6780
+step 08200 | lr 2.06e-04 | loss 1.7094
+step 08300 | lr 2.04e-04 | loss 1.6584
+step 08400 | lr 2.02e-04 | loss 1.6019
+step 08500 | lr 2.00e-04 | loss 1.6287 | val_loss 1.6653
+step 08600 | lr 1.98e-04 | loss 1.6045
+step 08700 | lr 1.96e-04 | loss 1.6255
+step 08800 | lr 1.94e-04 | loss 1.6155
+step 08900 | lr 1.92e-04 | loss 1.6554
+step 09000 | lr 1.90e-04 | loss 1.6853 | val_loss 1.6774
+checkpoint: checkpoints/e002.resume.pt (step 9000)
+step 09100 | lr 1.87e-04 | loss 1.5911
+step 09200 | lr 1.85e-04 | loss 1.6014
+step 09300 | lr 1.83e-04 | loss 1.6415
+step 09400 | lr 1.81e-04 | loss 1.7706
+step 09500 | lr 1.79e-04 | loss 1.6816 | val_loss 1.6395
+step 09600 | lr 1.77e-04 | loss 1.5303
+step 09700 | lr 1.75e-04 | loss 1.8420
+step 09800 | lr 1.73e-04 | loss 1.7777
+step 09900 | lr 1.70e-04 | loss 1.7576
+step 10000 | lr 1.68e-04 | loss 1.4586 | val_loss 1.6160
+checkpoint: checkpoints/e002.resume.pt (step 10000)
+step 10100 | lr 1.66e-04 | loss 1.6147
+step 10200 | lr 1.64e-04 | loss 1.5898
+step 10300 | lr 1.62e-04 | loss 1.6172
+step 10400 | lr 1.60e-04 | loss 1.7322
+step 10500 | lr 1.57e-04 | loss 1.6432 | val_loss 1.6272
+step 10600 | lr 1.55e-04 | loss 1.6985
+step 10700 | lr 1.53e-04 | loss 1.6734
+step 10800 | lr 1.51e-04 | loss 1.6060
+step 10900 | lr 1.49e-04 | loss 1.5728
+step 11000 | lr 1.47e-04 | loss 1.6743 | val_loss 1.5915
+checkpoint: checkpoints/e002.resume.pt (step 11000)
+step 11100 | lr 1.45e-04 | loss 1.5571
+step 11200 | lr 1.43e-04 | loss 1.5359
+step 11300 | lr 1.40e-04 | loss 1.6062
+step 11400 | lr 1.38e-04 | loss 1.5098
+step 11500 | lr 1.36e-04 | loss 1.5648 | val_loss 1.5961
+step 11600 | lr 1.34e-04 | loss 1.5415
+step 11700 | lr 1.32e-04 | loss 1.5601
+step 11800 | lr 1.30e-04 | loss 1.5406
+step 11900 | lr 1.28e-04 | loss 1.6095
+step 12000 | lr 1.26e-04 | loss 1.5954 | val_loss 1.5859
+checkpoint: checkpoints/e002.resume.pt (step 12000)
+step 12100 | lr 1.24e-04 | loss 1.6007
+step 12200 | lr 1.22e-04 | loss 1.5205
+step 12300 | lr 1.20e-04 | loss 1.5675
+step 12400 | lr 1.18e-04 | loss 1.6554
+step 12500 | lr 1.16e-04 | loss 1.5294 | val_loss 1.5892
+step 12600 | lr 1.14e-04 | loss 1.5905
+step 12700 | lr 1.12e-04 | loss 1.6373
+step 12800 | lr 1.10e-04 | loss 1.5688
+step 12900 | lr 1.08e-04 | loss 1.5731
+step 13000 | lr 1.06e-04 | loss 1.5804 | val_loss 1.5285
+checkpoint: checkpoints/e002.resume.pt (step 13000)
+step 13100 | lr 1.04e-04 | loss 1.6327
+step 13200 | lr 1.02e-04 | loss 1.5063
+step 13300 | lr 1.00e-04 | loss 1.5910
+step 13400 | lr 9.81e-05 | loss 1.5843
+step 13500 | lr 9.63e-05 | loss 1.4555 | val_loss 1.5448
+step 13600 | lr 9.44e-05 | loss 1.5381
+step 13700 | lr 9.26e-05 | loss 1.3942
+step 13800 | lr 9.08e-05 | loss 1.5094
+step 13900 | lr 8.90e-05 | loss 1.5412
+step 14000 | lr 8.72e-05 | loss 1.5136 | val_loss 1.5999
+checkpoint: checkpoints/e002.resume.pt (step 14000)
+step 14100 | lr 8.55e-05 | loss 1.5351
+step 14200 | lr 8.37e-05 | loss 1.5441
+step 14300 | lr 8.20e-05 | loss 1.4960
+step 14400 | lr 8.03e-05 | loss 1.7091
+step 14500 | lr 7.87e-05 | loss 1.6028 | val_loss 1.5378
+step 14600 | lr 7.70e-05 | loss 1.5849
+step 14700 | lr 7.54e-05 | loss 1.4308
+step 14800 | lr 7.38e-05 | loss 1.4479
+step 14900 | lr 7.22e-05 | loss 1.5487
+step 15000 | lr 7.07e-05 | loss 1.4234 | val_loss 1.5577
+checkpoint: checkpoints/e002.resume.pt (step 15000)
+step 15100 | lr 6.92e-05 | loss 1.5166
+step 15200 | lr 6.77e-05 | loss 1.4584
+step 15300 | lr 6.62e-05 | loss 1.6309
+step 15400 | lr 6.47e-05 | loss 1.4786
+step 15500 | lr 6.33e-05 | loss 1.6052 | val_loss 1.5063
+step 15600 | lr 6.19e-05 | loss 1.6102
+step 15700 | lr 6.05e-05 | loss 1.4128
+step 15800 | lr 5.92e-05 | loss 1.5488
+step 15900 | lr 5.78e-05 | loss 1.5069
+step 16000 | lr 5.65e-05 | loss 1.4091 | val_loss 1.5168
+checkpoint: checkpoints/e002.resume.pt (step 16000)
+step 16100 | lr 5.53e-05 | loss 1.3817
+step 16200 | lr 5.40e-05 | loss 1.5695
+step 16300 | lr 5.28e-05 | loss 1.5381
+step 16400 | lr 5.16e-05 | loss 1.5075
+step 16500 | lr 5.05e-05 | loss 1.5303 | val_loss 1.5044
+step 16600 | lr 4.94e-05 | loss 1.4793
+step 16700 | lr 4.83e-05 | loss 1.4624
+step 16800 | lr 4.72e-05 | loss 1.6754
+step 16900 | lr 4.62e-05 | loss 1.4738
+step 17000 | lr 4.52e-05 | loss 1.5732 | val_loss 1.5384
+checkpoint: checkpoints/e002.resume.pt (step 17000)
+step 17100 | lr 4.42e-05 | loss 1.4740
+step 17200 | lr 4.32e-05 | loss 1.4917
+step 17300 | lr 4.23e-05 | loss 1.4536
+step 17400 | lr 4.14e-05 | loss 1.6199
+step 17500 | lr 4.06e-05 | loss 1.4782 | val_loss 1.5180
+step 17600 | lr 3.98e-05 | loss 1.5525
+step 17700 | lr 3.90e-05 | loss 1.4606
+step 17800 | lr 3.82e-05 | loss 1.4477
+step 17900 | lr 3.75e-05 | loss 1.6266
+step 18000 | lr 3.68e-05 | loss 1.5098 | val_loss 1.5127
+checkpoint: checkpoints/e002.resume.pt (step 18000)
+step 18100 | lr 3.61e-05 | loss 1.4663
+step 18200 | lr 3.55e-05 | loss 1.6151
+step 18300 | lr 3.49e-05 | loss 1.5232
+step 18400 | lr 3.44e-05 | loss 1.4478
+step 18500 | lr 3.38e-05 | loss 1.4778 | val_loss 1.4879
+step 18600 | lr 3.34e-05 | loss 1.5697
+step 18700 | lr 3.29e-05 | loss 1.5761
+step 18800 | lr 3.25e-05 | loss 1.6126
+step 18900 | lr 3.21e-05 | loss 1.4360
+step 19000 | lr 3.17e-05 | loss 1.4889 | val_loss 1.4947
+checkpoint: checkpoints/e002.resume.pt (step 19000)
+step 19100 | lr 3.14e-05 | loss 1.4321
+step 19200 | lr 3.11e-05 | loss 1.5123
+step 19300 | lr 3.08e-05 | loss 1.4996
+step 19400 | lr 3.06e-05 | loss 1.5334
+step 19500 | lr 3.04e-05 | loss 1.4530 | val_loss 1.4898
+step 19600 | lr 3.03e-05 | loss 1.4458
+step 19700 | lr 3.02e-05 | loss 1.5125
+step 19800 | lr 3.01e-05 | loss 1.5371
+step 19900 | lr 3.00e-05 | loss 1.2930
+step 20000 | lr 3.00e-05 | loss 1.3629 | val_loss 1.4992
+saved: checkpoints/e002.pt
+device: cpu
+parameters: 1,931,200
+FP32 weights: 7.367 MiB
