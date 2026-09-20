@@ -31,6 +31,7 @@ import json
 import re
 from collections import Counter
 from dataclasses import dataclass
+from functools import cached_property
 from pathlib import Path
 
 # Split into runs of non-whitespace or runs of whitespace. Merges never
@@ -134,6 +135,20 @@ class BPETokenizer:
     def eos_id(self) -> int:
         return 256 + len(self.merges) + 2
 
+    @cached_property
+    def ranks(self) -> dict[tuple[int, int], int]:
+        """pair -> merge rank, built once per tokenizer instance (not once
+        per encode() call). This matters: tokenize_corpus.py calls
+        encode() once per line to keep memory bounded (see its
+        docstring), and a multi-GB corpus can be millions of lines --
+        rebuilding a several-thousand-entry dict that many times was the
+        actual bottleneck the first time this ran for real (see the
+        'Fix OOM' commit that preceded this one; that fix solved memory
+        but not this). cached_property writes straight into
+        self.__dict__, which works even though the dataclass is frozen.
+        """
+        return {pair: i for i, pair in enumerate(self.merges)}
+
     def encode(self, text: str, add_bos: bool = False, add_eos: bool = False) -> list[int]:
         # Rank-based greedy merge: at each step, merge the lowest-rank
         # (earliest-learned) applicable pair, then rescan. Cost per word
@@ -141,7 +156,7 @@ class BPETokenizer:
         # merges -- unlike naively re-applying every merge in order, which
         # is O(len(merges)) per word regardless of word length and becomes
         # the dominant cost once vocab_size is in the thousands.
-        ranks = {pair: i for i, pair in enumerate(self.merges)}
+        ranks = self.ranks
         ids: list[int] = []
         for token in _pretokenize(text):
             symbols = list(token.encode("utf-8"))

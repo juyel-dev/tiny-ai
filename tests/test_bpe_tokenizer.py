@@ -72,3 +72,16 @@ def test_bpe_add_bos_eos():
     ids = tok.encode("dog", add_bos=True, add_eos=True)
     assert ids[0] == tok.bos_id
     assert ids[-1] == tok.eos_id
+
+
+def test_ranks_are_cached_across_encode_calls():
+    # Regression test: the first real training run showed encode() being
+    # called once per line for a multi-million-line corpus, and rebuilding
+    # the pair->rank dict on every call was the actual bottleneck (not the
+    # per-word merge loop itself). `ranks` must be a cached_property, built
+    # once per tokenizer instance.
+    tok = train_bpe(CORPUS, vocab_size=300)
+    ranks_first = tok.ranks
+    tok.encode("the quick brown fox")
+    tok.encode("the lazy dog")
+    assert tok.ranks is ranks_first  # same object, not rebuilt
