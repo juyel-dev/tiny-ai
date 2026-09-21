@@ -1,0 +1,172 @@
+name: train-banglish
+
+# Manually-triggered pipeline for the Banglish -> Bangla experiment:
+# fetch BanglaTLit from Hugging Face, train a BPE tokenizer, phase-1
+# pretrain a TinyTransformer on romanized Bangla broadly, phase-2
+# fine-tune it on the ~40K labeled pairs with completion-only loss, then
+# run an honest evaluation (exact-match + character accuracy on held-out
+# pairs) before uploading anything. See tiny_ai/banglish.py and
+# scripts/train_banglish.py for the format/masking details, and
+# train_e002.yml's comments for the general GH Actions constraints
+# (CPU-only, 6h/job cap, free on this public repo).
+
+on:
+  workflow_dispatch:
+    inputs:
+      bpe_vocab_size:
+        default: "4096"
+      bpe_max_chars:
+        description: "Cap on characters scanned when training the BPE tokenizer (speed/memory safety, see train_e002.yml's history for why this matters)"
+        default: "5000000"
+      n_layer:
+        default: "6"
+      n_head:
+        default: "6"
+      n_embd:
+        default: "192"
+      block_size:
+        description: "Must comfortably cover BN/BD examples; dataset mean is ~59 chars/side, so this has real margin for the long tail"
+        default: "256"
+      pretrain_steps:
+        default: "15000"
+      pretrain_batch_size:
+        default: "32"
+      pretrain_lr:
+        default: "3e-4"
+      pretrain_warmup_steps:
+        default: "300"
+      pretrain_save_every:
+        default: "2000"
+      finetune_epochs:
+        default: "12"
+      finetune_batch_size:
+        default: "32"
+      finetune_lr:
+        default: "1e-4"
+      finetune_warmup_steps:
+        default: "200"
+      finetune_save_every:
+        description: "In STEPS, not epochs (fine-tune uses a step-resume checkpoint like pretrain does)"
+        default: "500"
+      resume_from_run_id:
+        description: "Optional: an earlier run ID of this workflow, to resume its pretrain/fine-tune checkpoint from"
+        default: ""
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e '.[data,dev]'
+
+      - name: Download checkpoint to resume, if requested
+        if: ${{ inputs.resume_from_run_id != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: banglish-checkpoint
+          path: checkpoints
+          run-id: ${{ inputs.resume_from_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fetch + prepare BanglaTLit
+        if: ${{ inputs.resume_from_run_id == '' }}
+        run: python scripts/prepare_banglish_data.py --out-dir data/processed/banglish
+
+      - name: Restore prepared data + tokenizer from the resumed run
+        if: ${{ inputs.resume_from_run_id != '' }}
+        run: |
+          mkdir -p data/processed/banglish tokenizer
+          cp checkpoints/data/* data/processed/banglish/
+          cp checkpoints/tokenizer.json tokenizer/banglish_bpe.json
+
+      - name: Train BPE tokenizer
+        if: ${{ inputs.resume_from_run_id == '' }}
+        run: |
+          mkdir -p tokenizer
+          python scripts/train_tokenizer.py \
+            --corpus data/processed/banglish/pretrain_train.txt \
+            --vocab-size ${{ inputs.bpe_vocab_size }} \
+            --max-chars ${{ inputs.bpe_max_chars }} \
+            --out tokenizer/banglish_bpe.json
+
+      - name: Encode phase-1 corpus with the BPE tokenizer
+        run: |
+          python scripts/tokenize_corpus.py --tokenizer tokenizer/banglish_bpe.json \
+            --input data/processed/banglish/pretrain_train.txt \
+            --output data/processed/banglish/pretrain_train.bpe.bin
+          python scripts/tokenize_corpus.py --tokenizer tokenizer/banglish_bpe.json \
+            --input data/processed/banglish/pretrain_val.txt \
+            --output data/processed/banglish/pretrain_val.bpe.bin
+
+      - name: Phase 1 -- pretrain on romanized Bangla broadly
+        run: |
+          mkdir -p checkpoints
+          RESUME_ARGS=""
+          if [ -f checkpoints/phase1.resume.pt ]; then
+            RESUME_ARGS="--resume checkpoints/phase1.resume.pt"
+          elif [ -f checkpoints/phase1.pt ]; then
+            RESUME_ARGS="--resume checkpoints/phase1.pt"
+          fi
+          python scripts/train_e002.py \
+            --train data/processed/banglish/pretrain_train.bpe.bin \
+            --val data/processed/banglish/pretrain_val.bpe.bin \
+            --tokenizer bpe --bpe-merges tokenizer/banglish_bpe.json \
+            --steps ${{ inputs.pretrain_steps }} \
+            --n-layer ${{ inputs.n_layer }} --n-head ${{ inputs.n_head }} \
+            --n-embd ${{ inputs.n_embd }} --block-size ${{ inputs.block_size }} \
+            --batch-size ${{ inputs.pretrain_batch_size }} --lr ${{ inputs.pretrain_lr }} \
+            --warmup-steps ${{ inputs.pretrain_warmup_steps }} \
+            --save-every ${{ inputs.pretrain_save_every }} \
+            --resume-out checkpoints/phase1.resume.pt \
+            --out checkpoints/phase1.pt \
+            $RESUME_ARGS --device cpu | tee checkpoints/phase1.log
+
+      - name: Phase 2 -- fine-tune on labeled pairs (completion-only loss)
+        run: |
+          RESUME_ARGS=""
+          if [ -f checkpoints/phase2.resume.pt ]; then
+            RESUME_ARGS="--resume checkpoints/phase2.resume.pt"
+          elif [ -f checkpoints/banglish.pt ]; then
+            RESUME_ARGS="--resume checkpoints/banglish.pt"
+          fi
+          python scripts/train_banglish.py \
+            --pairs-train data/processed/banglish/pairs_train.tsv \
+            --pairs-val data/processed/banglish/pairs_val.tsv \
+            --bpe-merges tokenizer/banglish_bpe.json \
+            --init-from checkpoints/phase1.pt \
+            --epochs ${{ inputs.finetune_epochs }} \
+            --batch-size ${{ inputs.finetune_batch_size }} \
+            --block-size ${{ inputs.block_size }} \
+            --lr ${{ inputs.finetune_lr }} \
+            --warmup-steps ${{ inputs.finetune_warmup_steps }} \
+            --save-every ${{ inputs.finetune_save_every }} \
+            --resume-out checkpoints/phase2.resume.pt \
+            --out checkpoints/banglish.pt \
+            $RESUME_ARGS --device cpu | tee checkpoints/phase2.log
+
+      - name: Honest evaluation on held-out pairs
+        run: |
+          python scripts/evaluate_banglish.py \
+            --checkpoint checkpoints/banglish.pt \
+            --pairs-val data/processed/banglish/pairs_val.tsv \
+            --sample-size 1000 | tee checkpoints/evaluation.log
+
+      - name: Stash tokenizer + prepared data alongside the checkpoint (for resumes and reproducibility)
+        run: |
+          cp tokenizer/banglish_bpe.json checkpoints/tokenizer.json
+          mkdir -p checkpoints/data
+          cp data/processed/banglish/*.tsv data/processed/banglish/*.txt checkpoints/data/
+
+      # Runs even on timeout/cancellation, so an interrupted run still
+      # yields a resumable checkpoint instead of losing everything.
+      - name: Upload checkpoint + logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: banglish-checkpoint
+          path: checkpoints/
+          retention-days: 14
