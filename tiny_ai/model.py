@@ -89,7 +89,9 @@ class TinyTransformer(nn.Module):
 
         loss = None
         if targets is not None:
-            loss = F.cross_entropy(logits.reshape(-1, logits.size(-1)), targets.reshape(-1))
+            loss = F.cross_entropy(
+                logits.reshape(-1, logits.size(-1)), targets.reshape(-1), ignore_index=-100
+            )
         return logits, loss
 
     @torch.no_grad()

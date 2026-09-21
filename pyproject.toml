@@ -13,7 +13,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
-data = ["huggingface_hub>=0.34.0"]
+data = ["huggingface_hub>=0.34.0", "datasets>=2.20.0", "pandas>=2.0.0"]
 
 [tool.setuptools.packages.find]
 include = ["tiny_ai*"]
