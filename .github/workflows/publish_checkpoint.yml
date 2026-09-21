@@ -3,16 +3,18 @@ name: publish-checkpoint
 # Actions artifacts (actions/upload-artifact) are only downloadable
 # through GitHub's own UI/API/CLI -- the underlying blob storage isn't
 # reachable from arbitrary tooling. This workflow re-publishes a given
-# run's "e002-checkpoint" artifact as a committed file on a dedicated
-# branch instead, so it's fetchable with plain `git fetch` like any
-# other repo content.
+# run's artifact as a committed file on a dedicated branch instead, so
+# it's fetchable with plain `git fetch` like any other repo content.
 
 on:
   workflow_dispatch:
     inputs:
       run_id:
-        description: "Workflow run ID to pull the e002-checkpoint artifact from"
+        description: "Workflow run ID to pull the artifact from"
         required: true
+      artifact_name:
+        description: "Artifact name to pull (e.g. e002-checkpoint, banglish-checkpoint)"
+        default: "e002-checkpoint"
       branch:
         description: "Branch to publish the checkpoint to (created if missing)"
         default: "checkpoints/e002-latest"
@@ -29,7 +31,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: e002-checkpoint
+          name: ${{ inputs.artifact_name }}
           path: published-checkpoint
           run-id: ${{ inputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -40,5 +42,5 @@ jobs:
           git config user.email "tiny-ai-copilot@users.noreply.github.com"
           git checkout -B "${{ inputs.branch }}"
           git add -f published-checkpoint
-          git commit -m "Publish checkpoint from run ${{ inputs.run_id }}"
+          git commit -m "Publish ${{ inputs.artifact_name }} from run ${{ inputs.run_id }}"
           git push -f origin "HEAD:${{ inputs.branch }}"
