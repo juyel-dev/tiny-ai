@@ -102,6 +102,19 @@ jobs:
             --input data/processed/banglish/pretrain_val.txt \
             --output data/processed/banglish/pretrain_val.bpe.bin
 
+      - name: Stash tokenizer + prepared data alongside the checkpoint (for resumes and reproducibility)
+        # Deliberately placed here, right after they're created/restored
+        # and BEFORE the long-running phase-1/phase-2 steps -- if the job
+        # gets cut off by the timeout mid-phase (as happened on the first
+        # real run), the uploaded artifact still has everything needed to
+        # resume. Stashing this only at the very end meant a mid-phase-1
+        # timeout produced a checkpoint with no tokenizer to resume with.
+        run: |
+          mkdir -p checkpoints
+          cp tokenizer/banglish_bpe.json checkpoints/tokenizer.json
+          mkdir -p checkpoints/data
+          cp data/processed/banglish/*.tsv data/processed/banglish/*.txt checkpoints/data/
+
       - name: Phase 1 -- pretrain on romanized Bangla broadly
         run: |
           mkdir -p checkpoints
@@ -154,12 +167,6 @@ jobs:
             --checkpoint checkpoints/banglish.pt \
             --pairs-val data/processed/banglish/pairs_val.tsv \
             --sample-size 1000 | tee checkpoints/evaluation.log
-
-      - name: Stash tokenizer + prepared data alongside the checkpoint (for resumes and reproducibility)
-        run: |
-          cp tokenizer/banglish_bpe.json checkpoints/tokenizer.json
-          mkdir -p checkpoints/data
-          cp data/processed/banglish/*.tsv data/processed/banglish/*.txt checkpoints/data/
 
       # Runs even on timeout/cancellation, so an interrupted run still
       # yields a resumable checkpoint instead of losing everything.
