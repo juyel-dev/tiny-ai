@@ -169,6 +169,12 @@ def main():
 
     out = Path(args.out)
     save_checkpoint(out, total_steps, include_optimizer=False)
+    # See the matching comment in train_e002.py: remove the periodic
+    # resume checkpoint once the final one is written, so it can't be
+    # mistaken for still-in-progress training by orchestration scripts.
+    resume_path = Path(args.resume_out)
+    if resume_path.exists():
+        resume_path.unlink()
     print(f"saved: {out}")
     print(f"device: {device}")
     print(f"parameters: {parameter_count(model):,}")
