@@ -1,0 +1,116 @@
+loading pairs...
+train pairs: 41,604 | val pairs: 1,260
+train examples: 40,489 (dropped 1,115 too-long)
+val examples:   1,234 (dropped 26 too-long)
+resumed fine-tuning from checkpoints/phase2.resume.pt at step 10500
+epoch 9/12 | step 10550/15180 | lr 2.96e-05 | loss 0.2497
+epoch 9/12 | step 10600/15180 | lr 2.92e-05 | loss 0.2311
+epoch 9/12 | step 10650/15180 | lr 2.88e-05 | loss 0.2761
+epoch 9/12 | step 10700/15180 | lr 2.84e-05 | loss 0.2263
+epoch 9/12 | step 10750/15180 | lr 2.81e-05 | loss 0.2851
+epoch 9/12 | step 10800/15180 | lr 2.77e-05 | loss 0.2485
+epoch 9/12 | step 10850/15180 | lr 2.73e-05 | loss 0.2687
+epoch 9/12 | step 10900/15180 | lr 2.69e-05 | loss 0.3016
+epoch 9/12 | step 10950/15180 | lr 2.66e-05 | loss 0.2542
+epoch 9/12 | step 11000/15180 | lr 2.62e-05 | loss 0.3131
+checkpoint: checkpoints/phase2.resume.pt (step 11000)
+epoch 9/12 | step 11050/15180 | lr 2.59e-05 | loss 0.3014
+epoch 9/12 | step 11100/15180 | lr 2.55e-05 | loss 0.2623
+epoch 9/12 | step 11150/15180 | lr 2.51e-05 | loss 0.2294
+epoch 9/12 | step 11200/15180 | lr 2.48e-05 | loss 0.3047
+epoch 9/12 | step 11250/15180 | lr 2.44e-05 | loss 0.2127
+epoch 9/12 | step 11300/15180 | lr 2.41e-05 | loss 0.2792
+epoch 9/12 | step 11350/15180 | lr 2.38e-05 | loss 0.2252
+epoch 9/12 | step 11400/15180 | lr 2.34e-05 | loss 0.2351
+epoch 9/12 | step 11450/15180 | lr 2.31e-05 | loss 0.3087
+epoch 9/12 | step 11500/15180 | lr 2.27e-05 | loss 0.3708
+checkpoint: checkpoints/phase2.resume.pt (step 11500)
+epoch 9/12 | step 11550/15180 | lr 2.24e-05 | loss 0.2463
+epoch 9/12 | step 11600/15180 | lr 2.21e-05 | loss 0.2593
+epoch 9/12 | step 11650/15180 | lr 2.18e-05 | loss 0.2111
+epoch 9/12 | step 11700/15180 | lr 2.15e-05 | loss 0.2385
+epoch 9/12 | step 11750/15180 | lr 2.11e-05 | loss 0.3586
+epoch 9/12 done | val_loss 0.3686
+epoch 10/12 | step 11800/15180 | lr 2.08e-05 | loss 0.2292
+epoch 10/12 | step 11850/15180 | lr 2.05e-05 | loss 0.2663
+epoch 10/12 | step 11900/15180 | lr 2.02e-05 | loss 0.2666
+epoch 10/12 | step 11950/15180 | lr 1.99e-05 | loss 0.2598
+epoch 10/12 | step 12000/15180 | lr 1.96e-05 | loss 0.1838
+checkpoint: checkpoints/phase2.resume.pt (step 12000)
+epoch 10/12 | step 12050/15180 | lr 1.94e-05 | loss 0.2451
+epoch 10/12 | step 12100/15180 | lr 1.91e-05 | loss 0.2511
+epoch 10/12 | step 12150/15180 | lr 1.88e-05 | loss 0.4834
+epoch 10/12 | step 12200/15180 | lr 1.85e-05 | loss 0.2550
+epoch 10/12 | step 12250/15180 | lr 1.82e-05 | loss 0.2421
+epoch 10/12 | step 12300/15180 | lr 1.80e-05 | loss 0.2428
+epoch 10/12 | step 12350/15180 | lr 1.77e-05 | loss 0.2780
+epoch 10/12 | step 12400/15180 | lr 1.74e-05 | loss 0.2268
+epoch 10/12 | step 12450/15180 | lr 1.72e-05 | loss 0.2054
+epoch 10/12 | step 12500/15180 | lr 1.69e-05 | loss 0.2524
+checkpoint: checkpoints/phase2.resume.pt (step 12500)
+epoch 10/12 | step 12550/15180 | lr 1.67e-05 | loss 0.1821
+epoch 10/12 | step 12600/15180 | lr 1.64e-05 | loss 0.1920
+epoch 10/12 | step 12650/15180 | lr 1.62e-05 | loss 0.2490
+epoch 10/12 | step 12700/15180 | lr 1.60e-05 | loss 0.2057
+epoch 10/12 | step 12750/15180 | lr 1.57e-05 | loss 0.2963
+epoch 10/12 | step 12800/15180 | lr 1.55e-05 | loss 0.2274
+epoch 10/12 | step 12850/15180 | lr 1.53e-05 | loss 0.2183
+epoch 10/12 | step 12900/15180 | lr 1.50e-05 | loss 0.2729
+epoch 10/12 | step 12950/15180 | lr 1.48e-05 | loss 0.2119
+epoch 10/12 | step 13000/15180 | lr 1.46e-05 | loss 0.2845
+checkpoint: checkpoints/phase2.resume.pt (step 13000)
+epoch 10/12 done | val_loss 0.3634
+epoch 11/12 | step 13050/15180 | lr 1.44e-05 | loss 0.2631
+epoch 11/12 | step 13100/15180 | lr 1.42e-05 | loss 0.1837
+epoch 11/12 | step 13150/15180 | lr 1.40e-05 | loss 0.2780
+epoch 11/12 | step 13200/15180 | lr 1.38e-05 | loss 0.1739
+epoch 11/12 | step 13250/15180 | lr 1.36e-05 | loss 0.2148
+epoch 11/12 | step 13300/15180 | lr 1.35e-05 | loss 0.2423
+epoch 11/12 | step 13350/15180 | lr 1.33e-05 | loss 0.1917
+epoch 11/12 | step 13400/15180 | lr 1.31e-05 | loss 0.1845
+epoch 11/12 | step 13450/15180 | lr 1.29e-05 | loss 0.1973
+epoch 11/12 | step 13500/15180 | lr 1.28e-05 | loss 0.1471
+checkpoint: checkpoints/phase2.resume.pt (step 13500)
+epoch 11/12 | step 13550/15180 | lr 1.26e-05 | loss 0.3306
+epoch 11/12 | step 13600/15180 | lr 1.24e-05 | loss 0.1948
+epoch 11/12 | step 13650/15180 | lr 1.23e-05 | loss 0.1797
+epoch 11/12 | step 13700/15180 | lr 1.22e-05 | loss 0.2328
+epoch 11/12 | step 13750/15180 | lr 1.20e-05 | loss 0.2164
+epoch 11/12 | step 13800/15180 | lr 1.19e-05 | loss 0.1797
+epoch 11/12 | step 13850/15180 | lr 1.17e-05 | loss 0.1823
+epoch 11/12 | step 13900/15180 | lr 1.16e-05 | loss 0.2231
+epoch 11/12 | step 13950/15180 | lr 1.15e-05 | loss 0.1710
+epoch 11/12 | step 14000/15180 | lr 1.14e-05 | loss 0.2219
+checkpoint: checkpoints/phase2.resume.pt (step 14000)
+epoch 11/12 | step 14050/15180 | lr 1.13e-05 | loss 0.2020
+epoch 11/12 | step 14100/15180 | lr 1.11e-05 | loss 0.2339
+epoch 11/12 | step 14150/15180 | lr 1.10e-05 | loss 0.2650
+epoch 11/12 | step 14200/15180 | lr 1.09e-05 | loss 0.1958
+epoch 11/12 | step 14250/15180 | lr 1.09e-05 | loss 0.2126
+epoch 11/12 done | val_loss 0.3635
+epoch 12/12 | step 14300/15180 | lr 1.08e-05 | loss 0.1502
+epoch 12/12 | step 14350/15180 | lr 1.07e-05 | loss 0.2851
+epoch 12/12 | step 14400/15180 | lr 1.06e-05 | loss 0.2663
+epoch 12/12 | step 14450/15180 | lr 1.05e-05 | loss 0.2506
+epoch 12/12 | step 14500/15180 | lr 1.05e-05 | loss 0.1856
+checkpoint: checkpoints/phase2.resume.pt (step 14500)
+epoch 12/12 | step 14550/15180 | lr 1.04e-05 | loss 0.2744
+epoch 12/12 | step 14600/15180 | lr 1.03e-05 | loss 0.1493
+epoch 12/12 | step 14650/15180 | lr 1.03e-05 | loss 0.1899
+epoch 12/12 | step 14700/15180 | lr 1.02e-05 | loss 0.2272
+epoch 12/12 | step 14750/15180 | lr 1.02e-05 | loss 0.1618
+epoch 12/12 | step 14800/15180 | lr 1.01e-05 | loss 0.1848
+epoch 12/12 | step 14850/15180 | lr 1.01e-05 | loss 0.2808
+epoch 12/12 | step 14900/15180 | lr 1.01e-05 | loss 0.2411
+epoch 12/12 | step 14950/15180 | lr 1.01e-05 | loss 0.1973
+epoch 12/12 | step 15000/15180 | lr 1.00e-05 | loss 0.2357
+checkpoint: checkpoints/phase2.resume.pt (step 15000)
+epoch 12/12 | step 15050/15180 | lr 1.00e-05 | loss 0.2157
+epoch 12/12 | step 15100/15180 | lr 1.00e-05 | loss 0.1897
+epoch 12/12 | step 15150/15180 | lr 1.00e-05 | loss 0.2076
+epoch 12/12 | step 15180/15180 | lr 1.00e-05 | loss 0.1965
+epoch 12/12 done | val_loss 0.3659
+saved: checkpoints/banglish.pt
+device: cpu
+parameters: 3,500,544
+FP32 weights: 13.354 MiB

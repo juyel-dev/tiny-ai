@@ -1,0 +1,34 @@
+[X  ] BN: Pordin sokale monib Rabeya Bosri-ke dasotwo jibon theke mukto korlen.
+      gold: পরদিন সকালে মনিব রাবেয়া বসরীকে দাসত্ব জীবন থেকে মুক্ত করলেন।
+      pred: পরদিন সকালে মনিব রাবীয়া বসরীকে দাঁৌত্ব জীবন থেকে মুক্ত করলেন।
+[X  ] BN: jantam aita…. but aita dia akabara full kaj hoi na. amon kono app asa jaita dia pc ar moto shomporno shondor koira erase hoi background
+      gold: জানতাম এইটা …. বাট এইটা দিয়ে একেবারে ফুল কাজ হয় না . এমন কোনো এপ আছে যেইটা দিয়ে পিসি আর মতো সম্পূর্ণ সুন্দর কইরা ইরেজ হয় ব্যাকগ্রাউন্ড
+      pred: জানতাম এইটা…. বাট এইটা দিয়ে এখানে ফুল কাজ হয় না। এমন কোনো অ্যাপ আশা যায়টা দিয়ে পিসি এর মতো সম্পর্ণ শন্ধর কইরা এর
+[X  ] BN: Tarpor theke bangali manas o chntadharar upojogi anusthan samprochar kore ei channel prabhut jonopriyota argan kore,
+      gold: তারপর থেকে বাঙালি মানস ও চিন্তাধারার উপযোগী অনুষ্ঠান সম্প্রচার করে এই চ্যানেল প্রভূত জনপ্রিয়তা অর্জন করে।
+      pred: তারপর থেকে বাঙালি মনাস ও চন্তাধারার উপযোগী অনুষ্ঠান সাম্রাচার করে এই চ্যানেল প্রভূত জনপ্রিয়তা আর্গান করে,
+[OK ] BN: Ekhon 15k market price.
+      gold: এখন ১৫কে মার্কেট প্রাইস।
+      pred: এখন ১৫কে মার্কেট প্রাইস।
+[X  ] BN: Post gula ekto dekhen Plzzzzz
+      gold: পোস্টগুলো একটু দেখেন প্লিজ
+      pred: পোস্ট গুলা একটু দেখেন প্লিজ
+[X  ] BN: Take Love Vaiya???
+      gold: টেক লাভ ভাইয়া???
+      pred: তাকে লাভ ভাইয়া???
+[X  ] BN: Mining er jnno gaming laptop gula valo hobe?
+      gold: মাইনিং এর জন্য গেমিং ল্যাপটপ গুলা ভালো হবে?
+      pred: মাইনিং এর জন্য গেমিং ল্যাপট্যান্স ভালো হবে?
+[X  ] BN: facutehub er data tader server a joma thake phn er browser a nah…. hoito account a kono problem hoise…phn er browser er data clear er sathe facutehub er kono somporko nai…
+      gold: ফ্যাচুটেহাব এর ডাটা তাঁদের সার্ভার এ জমা থাকে ফোন এর ব্রাউজর এ নাহ …. হয়তো একাউন্টএ কোনো প্রব্লেম হইসে …ফোন এর ব্রাউজর এর ডাটা ক্লিয়ার এর সাথে ফ্যাচুটেহাব এর কোনো সম্পর্ক nai…
+      pred: ফেক্টুহাব এর ডাটা তাদের সার্ভার এ জমা থাকে ফোন এর ব্রাউজার এ নাহ …. হয়তো অ্যাকাউন্ট এ কোনো প্রব্লেম হইসে …ফোন এর 
+[X  ] BN: tnx working…onek din dhire khujtechilam
+      gold: থ্যাংক ওয়ার্কিং…অনেক দিন ধীরে খুঁজতেছিলাম
+      pred: থ্যাংকস ওয়ার্কিং…অনেক দিন ঢিকোরে খুঁজছিলাম
+[X  ] BN: “Off Topic Question” Accha Apnar Site A Je S.E.O Code Gula Use Korechen Segula Jodi Ami Copy kore Nijer Moto Edit Kore Use Kori tahole ki seo fast hobe?? mane ai code gula use kore seo korle ki seo valo hobe setai jante chacchi…
+      gold: “অফ টপিক কোশ্চেন” আচ্ছা আপনার সাইট এ যে এস.ই.ও কোড গুলা ইউজ করেছেন সেগুলা যদি আমি কপি করে নিজের মতো এডিট করে ইউজ করি তাহলে কি এসইও ফাস্ট হবে?? মানে এই কোড গুলা ইউজ করে এসইও করলে কি এসইও ভালো হবে সেটাই জানতে চাচ্ছি…
+      pred: "অফ টিপি কোশ্চেন" আচ্ছা আপনার সাইট এ যে সি। এও কোড গুলা ইউজ করেছেন সেইগুলা যদি আমি কপি করে নিয়ের মত এডিট
+
+evaluated: 1,000 pairs
+exact_match:   16.1%
+char_accuracy: 85.8%

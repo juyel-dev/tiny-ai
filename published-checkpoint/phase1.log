@@ -1,0 +1,15 @@
+resumed from checkpoints/phase1.resume.pt at step 14000
+step 14100 | lr 3.25e-05 | loss 2.8242
+step 14200 | lr 3.20e-05 | loss 2.8611
+step 14300 | lr 3.15e-05 | loss 2.8760
+step 14400 | lr 3.11e-05 | loss 2.8320
+step 14500 | lr 3.08e-05 | loss 2.7640 | val_loss 3.0319
+step 14600 | lr 3.05e-05 | loss 2.9316
+step 14700 | lr 3.03e-05 | loss 2.8775
+step 14800 | lr 3.01e-05 | loss 2.8853
+step 14900 | lr 3.00e-05 | loss 2.8324
+step 15000 | lr 3.00e-05 | loss 2.8864 | val_loss 3.0126
+saved: checkpoints/phase1.pt
+device: cpu
+parameters: 3,500,544
+FP32 weights: 13.354 MiB
