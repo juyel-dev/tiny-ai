@@ -182,6 +182,14 @@ def main():
 
             out = Path(args.out)
             save_checkpoint(out, args.steps, include_optimizer=False)
+            # The final checkpoint supersedes any periodic resume
+            # checkpoint from this run -- remove it so orchestration
+            # scripts that check "does a resume checkpoint exist?" don't
+            # find a stale, earlier-step one lying around and mistakenly
+            # resume from it instead of recognizing training is done.
+            resume_path = Path(args.resume_out)
+            if resume_path.exists():
+                resume_path.unlink()
             print(f"saved: {out}")
             print(f"device: {device}")
             print(f"parameters: {parameter_count(model):,}")
