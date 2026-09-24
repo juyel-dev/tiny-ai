@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>বাংলা লেখো — Banglish থেকে বাংলা</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tiro+Bangla&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #FBF6EA;
+    --paper-2: #F3ECD9;
+    --ink: #1C2B39;
+    --ink-soft: #4A5C6B;
+    --marigold: #E39A2D;
+    --marigold-deep: #C77F1A;
+    --alta: #9A3B44;
+    --line: #E1D6BB;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #171310;
+      --paper-2: #211B15;
+      --ink: #F1E9D8;
+      --ink-soft: #C7B99A;
+      --marigold: #EFAE47;
+      --marigold-deep: #F4C06A;
+      --alta: #D9727C;
+      --line: #3A2F22;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #171310;
+    --paper-2: #211B15;
+    --ink: #F1E9D8;
+    --ink-soft: #C7B99A;
+    --marigold: #EFAE47;
+    --marigold-deep: #F4C06A;
+    --alta: #D9727C;
+    --line: #3A2F22;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Hind Siliguri", "Inter", system-ui, sans-serif;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    min-height: 100%;
+  }
+  .wrap {
+    max-width: 620px;
+    margin: 0 auto;
+    padding: 48px 20px 64px;
+  }
+  header {
+    margin-bottom: 36px;
+  }
+  .mark {
+    font-size: 15px;
+    color: var(--marigold-deep);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    margin: 0 0 6px;
+  }
+  h1 {
+    font-family: "Tiro Bangla", serif;
+    font-weight: 400;
+    font-size: 34px;
+    line-height: 1.25;
+    margin: 0 0 10px;
+  }
+  .sub {
+    color: var(--ink-soft);
+    font-size: 15.5px;
+    line-height: 1.6;
+    margin: 0;
+    max-width: 46ch;
+  }
+  .panel {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px;
+  }
+  textarea {
+    width: 100%;
+    min-height: 96px;
+    resize: vertical;
+    border: none;
+    background: transparent;
+    color: var(--ink);
+    font-family: "Hind Siliguri", "Inter", system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.6;
+    outline: none;
+    padding: 0;
+  }
+  textarea::placeholder { color: var(--ink-soft); opacity: 0.7; }
+  .row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    margin-top: 14px;
+  }
+  .hint { font-size: 13px; color: var(--ink-soft); margin-right: auto; }
+  button {
+    appearance: none;
+    border: none;
+    background: var(--marigold);
+    color: #23150A;
+    font-family: inherit;
+    font-size: 15.5px;
+    font-weight: 600;
+    padding: 11px 22px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.12s ease, background 0.12s ease;
+  }
+  button:hover { background: var(--marigold-deep); }
+  button:active { transform: scale(0.97); }
+  button:disabled { opacity: 0.55; cursor: default; transform: none; }
+
+  .output-shell { margin-top: 22px; }
+  .output-shell.hidden { display: none; }
+  .output-label {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin: 0 0 8px;
+  }
+  .output-panel {
+    border-left: 3px solid var(--marigold);
+    padding: 4px 0 4px 18px;
+  }
+  .output-text {
+    font-family: "Tiro Bangla", serif;
+    font-size: 24px;
+    line-height: 1.7;
+    color: var(--ink);
+    white-space: pre-wrap;
+    word-break: break-word;
+    min-height: 1.7em;
+  }
+  .cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1.1em;
+    background: var(--alta);
+    vertical-align: text-bottom;
+    animation: blink 1s steps(1) infinite;
+    margin-left: 2px;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .status {
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 18px;
+  }
+  .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--marigold);
+    animation: pulse 1.1s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+  footer {
+    margin-top: 40px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.7;
+    border-top: 1px solid var(--line);
+    padding-top: 18px;
+  }
+  footer a { color: var(--ink-soft); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="mark">tiny-ai · banglish2bangla</p>
+    <h1>যা টাইপ করো বাংলিশে, দেখাই বাংলায়</h1>
+    <p class="sub">ব্রাউজারেই চলে — কোনো সার্ভারে পাঠানো হয় না, ইন্টারনেট ছাড়াও কাজ করে (একবার পাতাটা লোড হয়ে গেলে)।</p>
+  </header>
+
+  <div class="panel">
+    <textarea id="input" placeholder="ami tomake bhalobashi" autofocus></textarea>
+    <div class="row">
+      <span class="hint" id="hint">Enter চাপো, অথবা বোতামে ক্লিক করো</span>
+      <button id="go">বাংলায় লেখো</button>
+    </div>
+  </div>
+
+  <div class="output-shell hidden" id="outputShell">
+    <p class="output-label">বাংলা</p>
+    <div class="output-panel">
+      <div class="output-text" id="output"></div>
+    </div>
+  </div>
+  <div class="status" id="status"></div>
+
+  <footer>
+    একটা ৩৫ লক্ষ প্যারামিটারের tiny AI মডেল, GitHub Actions-এর ফ্রি CPU দিয়ে ট্রেন করা।
+    ছোট/সাধারণ বাক্যে ভালো কাজ করে, মাঝেমধ্যে ছোটখাটো বানান ভুল করতে পারে —
+    এটা প্রোডাকশন-গ্রেড অনুবাদক নয়, একটা শেখার প্রজেক্ট।
+  </footer>
+</div>
+
+<script>
+const MANIFEST = __MANIFEST_JSON__;
+const WEIGHTS_B64 = "__WEIGHTS_B64__";
+</script>
+<script>
+(function () {
+  "use strict";
+
+  // ---------- float16 -> float32 ----------
+  function f16ToF32(h) {
+    const s = (h & 0x8000) >> 15;
+    const e = (h & 0x7C00) >> 10;
+    const f = h & 0x03FF;
+    if (e === 0) {
+      return (s ? -1 : 1) * Math.pow(2, -14) * (f / 1024);
+    } else if (e === 0x1F) {
+      return f ? NaN : (s ? -Infinity : Infinity);
+    }
+    return (s ? -1 : 1) * Math.pow(2, e - 15) * (1 + f / 1024);
+  }
+
+  function base64ToUint8Array(b64) {
+    const bin = atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return arr;
+  }
+
+  function loadTensors(manifest, bytes) {
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const map = {};
+    for (const t of manifest.tensors) {
+      const n = t.length / 2;
+      const out = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        out[i] = f16ToF32(view.getUint16(t.offset + i * 2, true));
+      }
+      map[t.name] = { data: out, shape: t.shape };
+    }
+    return map;
+  }
+
+  // ---------- tensor ops ----------
+  function linear(x, T, inDim, W, outDim, bias) {
+    const y = new Float32Array(T * outDim);
+    for (let t = 0; t < T; t++) {
+      const xOff = t * inDim;
+      for (let o = 0; o < outDim; o++) {
+        let sum = bias ? bias[o] : 0;
+        const wOff = o * inDim;
+        for (let i = 0; i < inDim; i++) sum += x[xOff + i] * W[wOff + i];
+        y[t * outDim + o] = sum;
+      }
+    }
+    return y;
+  }
+
+  function layerNorm(x, T, dim, weight, bias, eps) {
+    eps = eps || 1e-5;
+    const y = new Float32Array(T * dim);
+    for (let t = 0; t < T; t++) {
+      const off = t * dim;
+      let mean = 0;
+      for (let i = 0; i < dim; i++) mean += x[off + i];
+      mean /= dim;
+      let variance = 0;
+      for (let i = 0; i < dim; i++) { const d = x[off + i] - mean; variance += d * d; }
+      variance /= dim;
+      const invStd = 1 / Math.sqrt(variance + eps);
+      for (let i = 0; i < dim; i++) y[off + i] = (x[off + i] - mean) * invStd * weight[i] + bias[i];
+    }
+    return y;
+  }
+
+  function erf(x) {
+    const sign = x < 0 ? -1 : 1;
+    x = Math.abs(x);
+    const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741, a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
+    const t = 1 / (1 + p * x);
+    const y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+    return sign * y;
+  }
+  function gelu(x) { return 0.5 * x * (1 + erf(x * Math.SQRT1_2)); }
+
+  function addInPlace(a, b) { for (let i = 0; i < a.length; i++) a[i] += b[i]; return a; }
+
+  function causalSelfAttention(qkv, nEmbd, nHead, layerCache, pos) {
+    const headDim = nEmbd / nHead;
+    const scale = 1 / Math.sqrt(headDim);
+    const out = new Float32Array(nEmbd);
+    const scores = new Float32Array(pos + 1);
+    for (let h = 0; h < nHead; h++) {
+      const hOff = h * headDim;
+      let maxScore = -Infinity;
+      for (let j = 0; j <= pos; j++) {
+        let dot = 0;
+        for (let d = 0; d < headDim; d++) dot += qkv[hOff + d] * layerCache.k[j * nEmbd + hOff + d];
+        const s = dot * scale;
+        scores[j] = s;
+        if (s > maxScore) maxScore = s;
+      }
+      let sumExp = 0;
+      for (let j = 0; j <= pos; j++) { scores[j] = Math.exp(scores[j] - maxScore); sumExp += scores[j]; }
+      for (let d = 0; d < headDim; d++) {
+        let acc = 0;
+        for (let j = 0; j <= pos; j++) acc += (scores[j] / sumExp) * layerCache.v[j * nEmbd + hOff + d];
+        out[hOff + d] = acc;
+      }
+    }
+    return out;
+  }
+
+  function createKVCache(cfg) {
+    const layers = [];
+    for (let l = 0; l < cfg.n_layer; l++) {
+      layers.push({ k: new Float32Array(cfg.block_size * cfg.n_embd), v: new Float32Array(cfg.block_size * cfg.n_embd) });
+    }
+    return layers;
+  }
+
+  // Processes ONE token at position `pos`, using cached keys/values from
+  // all earlier positions -- O(1) per step for embeddings/LN/MLP/proj
+  // (only the new token is touched) instead of recomputing the whole
+  // prefix every step. This is the single biggest lever for latency on
+  // a phone: without it, generating one sentence took 1.5-8+ seconds in
+  // testing; with it, 100-400ms for the same sentences (verified
+  // byte-identical output either way, cross-checked against the Python
+  // model on 60 real held-out pairs -- see the export/build scripts).
+  function forwardStep(tokenId, pos, tensors, cfg, kvCache) {
+    const nEmbd = cfg.n_embd;
+    const tokEmb = tensors["tok_emb"].data;
+    const posEmb = tensors["pos_emb"].data;
+    let x = new Float32Array(nEmbd);
+    const tokOff = tokenId * nEmbd, posOff = pos * nEmbd;
+    for (let i = 0; i < nEmbd; i++) x[i] = tokEmb[tokOff + i] + posEmb[posOff + i];
+
+    for (let l = 0; l < cfg.n_layer; l++) {
+      const p = "blocks." + l;
+      const ln1 = layerNorm(x, 1, nEmbd, tensors[p + ".ln1.weight"].data, tensors[p + ".ln1.bias"].data);
+      const qkv = linear(ln1, 1, nEmbd, tensors[p + ".attn.qkv.weight"].data, 3 * nEmbd, null);
+      const layerCache = kvCache[l];
+      for (let i = 0; i < nEmbd; i++) {
+        layerCache.k[pos * nEmbd + i] = qkv[nEmbd + i];
+        layerCache.v[pos * nEmbd + i] = qkv[2 * nEmbd + i];
+      }
+      const qOnly = qkv.subarray(0, nEmbd);
+      const attnOut = causalSelfAttention(qOnly, nEmbd, cfg.n_head, layerCache, pos);
+      const attnProj = linear(attnOut, 1, nEmbd, tensors[p + ".attn.proj.weight"].data, nEmbd, null);
+      addInPlace(x, attnProj);
+      const ln2 = layerNorm(x, 1, nEmbd, tensors[p + ".ln2.weight"].data, tensors[p + ".ln2.bias"].data);
+      const h1 = linear(ln2, 1, nEmbd, tensors[p + ".mlp0.weight"].data, 4 * nEmbd, tensors[p + ".mlp0.bias"].data);
+      for (let i = 0; i < h1.length; i++) h1[i] = gelu(h1[i]);
+      const h2 = linear(h1, 1, 4 * nEmbd, tensors[p + ".mlp2.weight"].data, nEmbd, tensors[p + ".mlp2.bias"].data);
+      addInPlace(x, h2);
+    }
+    const lastLN = layerNorm(x, 1, nEmbd, tensors["ln_f.weight"].data, tensors["ln_f.bias"].data);
+    const vocabSize = cfg.vocab_size;
+    const logits = new Float32Array(vocabSize);
+    for (let v = 0; v < vocabSize; v++) {
+      let sum = 0;
+      const wOff = v * nEmbd;
+      for (let i = 0; i < nEmbd; i++) sum += lastLN[i] * tokEmb[wOff + i];
+      logits[v] = sum;
+    }
+    return logits;
+  }
+
+  // ---------- BPE tokenizer (mirrors tiny_ai/bpe_tokenizer.py) ----------
+  function pretokenize(text) { return text.match(/\S+|\s+/g) || []; }
+
+  function mergePair(symbols, a, b, mergedId) {
+    const out = [];
+    let i = 0;
+    while (i < symbols.length) {
+      if (i < symbols.length - 1 && symbols[i] === a && symbols[i + 1] === b) { out.push(mergedId); i += 2; }
+      else { out.push(symbols[i]); i += 1; }
+    }
+    return out;
+  }
+
+  function makeTokenizer(tokInfo) {
+    const merges = tokInfo.merges;
+    const ranks = new Map();
+    merges.forEach((pair, i) => ranks.set(pair[0] + "," + pair[1], i));
+    const padId = 256 + merges.length;
+    return { merges, ranks, padId, bosId: padId + 1, eosId: padId + 2, vocabSize: tokInfo.vocab_size };
+  }
+
+  function bpeEncodeToken(token, ranks) {
+    let symbols = Array.from(new TextEncoder().encode(token));
+    while (symbols.length > 1) {
+      let bestRank = null, bestIdx = -1;
+      for (let i = 0; i < symbols.length - 1; i++) {
+        const r = ranks.get(symbols[i] + "," + symbols[i + 1]);
+        if (r !== undefined && (bestRank === null || r < bestRank)) { bestRank = r; bestIdx = i; }
+      }
+      if (bestIdx === -1) break;
+      symbols = mergePair(symbols, symbols[bestIdx], symbols[bestIdx + 1], 256 + bestRank);
+    }
+    return symbols;
+  }
+
+  function bpeEncode(text, tok) {
+    let ids = [];
+    for (const t of pretokenize(text)) ids = ids.concat(bpeEncodeToken(t, tok.ranks));
+    return ids;
+  }
+
+  function bpeDecode(ids, tok) {
+    const cache = new Map();
+    function expand(id) {
+      if (cache.has(id)) return cache.get(id);
+      let bytes;
+      if (id < 256) bytes = [id];
+      else { const pair = tok.merges[id - 256]; bytes = expand(pair[0]).concat(expand(pair[1])); }
+      cache.set(id, bytes);
+      return bytes;
+    }
+    let allBytes = [];
+    for (const id of ids) { if (id >= tok.padId) continue; allBytes = allBytes.concat(expand(id)); }
+    return new TextDecoder("utf-8", { fatal: false }).decode(new Uint8Array(allBytes));
+  }
+
+  // ---------- app ----------
+  const els = {
+    input: document.getElementById("input"),
+    go: document.getElementById("go"),
+    outputShell: document.getElementById("outputShell"),
+    output: document.getElementById("output"),
+    status: document.getElementById("status"),
+    hint: document.getElementById("hint"),
+  };
+
+  let state = null;
+
+  function setStatus(text, busy) {
+    els.status.innerHTML = busy ? '<span class="dot"></span>' + text : text;
+  }
+
+  function loadModel() {
+    setStatus("মডেল লোড হচ্ছে...", true);
+    els.go.disabled = true;
+    setTimeout(function () {
+      try {
+        const bytes = base64ToUint8Array(WEIGHTS_B64);
+        const tensors = loadTensors(MANIFEST, bytes);
+        const tok = makeTokenizer(MANIFEST.tokenizer);
+        state = { tensors, tok, cfg: MANIFEST.config, promptTemplate: MANIFEST.prompt_template };
+        setStatus("", false);
+        els.go.disabled = false;
+        els.hint.textContent = "Enter চাপো, অথবা বোতামে ক্লিক করো";
+      } catch (e) {
+        setStatus("মডেল লোড করতে সমস্যা হয়েছে: " + e.message, false);
+      }
+    }, 30);
+  }
+
+  async function run() {
+    const text = els.input.value.trim();
+    if (!text || !state) return;
+    els.go.disabled = true;
+    els.outputShell.classList.remove("hidden");
+    els.output.innerHTML = '<span class="cursor"></span>';
+    setStatus("লিখছে...", true);
+
+    await new Promise((r) => setTimeout(r, 20));
+
+    try {
+      const prompt = state.promptTemplate.replace("{banglish}", text);
+      const promptIds = [state.tok.bosId].concat(bpeEncode(prompt, state.tok));
+      const blockSize = state.cfg.block_size;
+      const kvCache = createKVCache(state.cfg);
+      const maxNewTokens = 80;
+
+      let logits;
+      for (let pos = 0; pos < promptIds.length; pos++) {
+        logits = forwardStep(promptIds[pos], pos, state.tensors, state.cfg, kvCache);
+      }
+
+      let ids = promptIds.slice();
+      const promptLen = promptIds.length;
+
+      for (let step = 0; step < maxNewTokens; step++) {
+        let best = 0, bestVal = -Infinity;
+        for (let v = 0; v < logits.length; v++) if (logits[v] > bestVal) { bestVal = logits[v]; best = v; }
+        ids.push(best);
+        if (best === state.tok.eosId) break;
+
+        if (step % 4 === 0) {
+          const partial = ids.slice(promptLen);
+          els.output.innerHTML = escapeHtml(bpeDecode(partial, state.tok)) + '<span class="cursor"></span>';
+          await new Promise((r) => setTimeout(r, 0));
+        }
+
+        if (ids.length >= blockSize) break;
+        logits = forwardStep(best, ids.length - 1, state.tensors, state.cfg, kvCache);
+      }
+
+      let genIds = ids.slice(promptLen);
+      if (genIds.length && genIds[genIds.length - 1] === state.tok.eosId) genIds = genIds.slice(0, -1);
+      els.output.textContent = bpeDecode(genIds, state.tok);
+      setStatus("", false);
+    } catch (e) {
+      setStatus("কিছু ভুল হয়েছে: " + e.message, false);
+    } finally {
+      els.go.disabled = false;
+    }
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  els.go.addEventListener("click", run);
+  els.input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); run(); }
+  });
+
+  loadModel();
+})();
+</script>
+</body>
+</html>

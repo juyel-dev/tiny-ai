@@ -203,3 +203,20 @@ Worth knowing before you use it:
 - **BPE tokenizer training is pure Python** (see above) and its cost scales with the number of distinct words in the corpus, not corpus size — but TinyStories' full training split is large enough that this can still take a while. Use the `bpe_max_chars` input to cap it, or time `scripts/train_tokenizer.py` locally on a subset first before committing to a full run.
 
 The resulting checkpoint is only downloadable from the workflow's artifact, not automatically committed to the repo — download it via the Actions run page and check it into `checkpoints/` (or wherever you keep them) yourself if you want it in version control.
+
+## Experiment: Banglish -> Bangla transliteration
+
+A second, separate experiment (E002's story model is untouched) built on the same infra: `tiny_ai/banglish.py`, `scripts/prepare_banglish_data.py`, `scripts/train_banglish.py`, `scripts/evaluate_banglish.py`, and `.github/workflows/train_banglish.yml` train a small model to convert romanized Bangla ("ami tomake bhalobashi") into Bangla script ("আমি তোমাকে ভালোবাসি"), using [BanglaTLit](https://huggingface.co/datasets/aplycaebous/BanglaTLit) (Fahim et al., EMNLP'24 Findings).
+
+Two phases: plain language-model pretraining on romanized Bangla broadly, then fine-tuning on ~40K labeled pairs with completion-only loss (the model is only trained to predict the Bangla output, not the Banglish prompt it's given — see `tiny_ai/banglish.py`'s packing/masking). Evaluated honestly on held-out pairs: exact-match rate and Levenshtein-based character accuracy, not vibes.
+
+### Live demo
+
+`scripts/export_banglish_web.py` + `scripts/build_banglish_web.py` package a trained checkpoint into one self-contained HTML file that runs entirely in the browser — the forward pass is hand-implemented in JavaScript (mirroring `tiny_ai/model.py` exactly, cross-checked byte-for-byte against the Python model's output on real held-out pairs before shipping), with a KV-cache for interactive latency. No server, no API calls, works offline once loaded. Deployed via `.github/workflows/deploy_banglish_web.yml` to GitHub Pages.
+
+To build it yourself from a checkpoint:
+```bash
+python scripts/export_banglish_web.py --checkpoint checkpoints/banglish.pt --out-dir web_export
+python scripts/build_banglish_web.py --export-dir web_export --out web/banglish.html
+```
+The weights are embedded as base64-encoded float16 (halves the size vs float32, negligible quality loss at this model scale) — keep the exported model small enough to stay under the ~16 MiB a single HTML file can reasonably hold.
