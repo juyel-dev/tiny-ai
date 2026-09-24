@@ -1,0 +1,65 @@
+name: deploy-banglish-web
+
+# Builds tiny_ai/static/banglish_template.html into a self-contained page
+# using the latest trained checkpoint (from the checkpoints/banglish-latest
+# branch, kept up to date by .github/workflows/publish_checkpoint.yml) and
+# deploys it to GitHub Pages. No server, no API calls at runtime -- the
+# whole model runs client-side in the visitor's browser (see
+# scripts/export_banglish_web.py and the template for how).
+#
+# Manually triggered rather than on every push, since it depends on
+# publish_checkpoint.yml having already run for whichever training run you
+# want live.
+
+on:
+  workflow_dispatch:
+    inputs:
+      checkpoint_branch:
+        description: "Branch holding the checkpoint to deploy (see publish_checkpoint.yml)"
+        default: "checkpoints/banglish-latest"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.checkpoint_branch }}
+          path: checkpoint-branch
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e '.[dev]'
+
+      - name: Export model + tokenizer for browser inference
+        run: |
+          python scripts/export_banglish_web.py \
+            --checkpoint checkpoint-branch/published-checkpoint/banglish.pt \
+            --out-dir web_export
+
+      - name: Build the self-contained page
+        run: |
+          mkdir -p public
+          python scripts/build_banglish_web.py --export-dir web_export --out public/index.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
