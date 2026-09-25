@@ -6,6 +6,8 @@ meaningless.
 """
 from __future__ import annotations
 
+import torch
+
 from tiny_ai.bpe_tokenizer import BPETokenizer
 
 PROMPT_TEMPLATE = "BN: {banglish}\nBD: "
@@ -83,3 +85,55 @@ def levenshtein(a: str, b: str) -> int:
             curr[j] = min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost)
         prev = curr
     return prev[-1]
+
+
+def beam_search_generate(model, tokenizer, prompt_template, banglish, max_new_tokens, beam_width, length_penalty=1.0):
+    """Beam search decoding: track ``beam_width`` candidate completions at
+    once instead of greedily committing to the single best next token
+    each step, and return the highest length-normalized-score completed
+    (or longest-running) one at the end.
+
+    Batches all active beams into one model call per step (PyTorch's
+    batched matmuls make this fast even without a KV-cache -- unlike the
+    browser's hand-rolled JS engine, which needs one to be fast at all,
+    see tiny_ai/static/banglish_template.html), so this is no slower in
+    practice than the greedy loop despite tracking multiple candidates.
+    """
+    device = next(model.parameters()).device
+    prompt_ids = [tokenizer.bos_id] + tokenizer.encode(prompt_template.format(banglish=banglish))
+    prompt_len = len(prompt_ids)
+
+    beams = [(list(prompt_ids), 0.0, False)]  # (ids, cumulative log-prob, done)
+
+    for _ in range(max_new_tokens):
+        active = [(ids, score) for ids, score, done in beams if not done]
+        if not active:
+            break
+
+        batch_ids = [ids[-model.cfg.block_size:] for ids, _ in active]
+        idx = torch.tensor(batch_ids, dtype=torch.long, device=device)
+        with torch.no_grad():
+            logits, _ = model(idx)
+        log_probs = torch.log_softmax(logits[:, -1, :], dim=-1)
+
+        candidates = [(ids, score, True) for ids, score, done in beams if done]
+        for (ids, score), lp in zip(active, log_probs):
+            topk_lp, topk_idx = torch.topk(lp, beam_width)
+            for j in range(beam_width):
+                token_id = topk_idx[j].item()
+                new_ids = ids + [token_id]
+                new_score = score + topk_lp[j].item()
+                done = token_id == tokenizer.eos_id or len(new_ids) >= model.cfg.block_size
+                candidates.append((new_ids, new_score, done))
+
+        candidates.sort(key=lambda c: c[1] / (len(c[0]) ** length_penalty), reverse=True)
+        beams = candidates[:beam_width]
+
+        if all(done for _, _, done in beams):
+            break
+
+    best_ids, _, _ = max(beams, key=lambda c: c[1] / (len(c[0]) ** length_penalty))
+    generated = best_ids[prompt_len:]
+    if generated and generated[-1] == tokenizer.eos_id:
+        generated = generated[:-1]
+    return tokenizer.decode(generated)

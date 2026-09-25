@@ -15,7 +15,7 @@ import random
 
 import torch
 
-from tiny_ai.banglish import PROMPT_TEMPLATE, levenshtein, load_pairs
+from tiny_ai.banglish import PROMPT_TEMPLATE, beam_search_generate, levenshtein, load_pairs
 from tiny_ai.inference import load_checkpoint
 
 
@@ -55,6 +55,10 @@ def main():
     p.add_argument("--top-k", type=int, default=40)
     p.add_argument("--show-examples", type=int, default=10)
     p.add_argument("--seed", type=int, default=1337)
+    p.add_argument("--decoding", choices=["greedy", "beam"], default="greedy")
+    p.add_argument("--beam-width", type=int, default=5)
+    p.add_argument("--length-penalty", type=float, default=1.0,
+                    help="Beam search only. >1 favors longer completions, <1 favors shorter.")
     args = p.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -75,7 +79,11 @@ def main():
     char_acc_sum = 0.0
     shown = 0
     for banglish, gold in val_pairs:
-        pred = generate_bangla(model, tokenizer, prompt_template, banglish, args.max_new_tokens, args.temperature, args.top_k)
+        if args.decoding == "beam":
+            pred = beam_search_generate(model, tokenizer, prompt_template, banglish,
+                                         args.max_new_tokens, args.beam_width, args.length_penalty)
+        else:
+            pred = generate_bangla(model, tokenizer, prompt_template, banglish, args.max_new_tokens, args.temperature, args.top_k)
         is_exact = pred == gold
         exact += is_exact
         char_acc_sum += 1 - levenshtein(pred, gold) / max(len(gold), 1)

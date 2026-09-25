@@ -85,3 +85,55 @@ def test_levenshtein_bengali_text():
     assert levenshtein(a, b) == 0
     c = "আমি তোমাকে ভালোবাসি না"
     assert levenshtein(a, c) > 0
+
+
+def test_beam_search_width_1_matches_greedy():
+    # With beam_width=1 there's no alternative path to ever consider --
+    # it must reduce to exactly the same deterministic argmax choices as
+    # greedy decoding, token for token.
+    import torch
+    from tiny_ai.banglish import beam_search_generate
+    from tiny_ai.config import ModelConfig
+    from tiny_ai.model import TinyTransformer
+
+    tok = _tok()
+    cfg = ModelConfig(vocab_size=tok.vocab_size, block_size=48, n_layer=2, n_head=2, n_embd=16)
+    model = TinyTransformer(cfg)
+    model.eval()
+
+    banglish = "tumi kemon acho"
+
+    beam_out = beam_search_generate(model, tok, PROMPT_TEMPLATE, banglish, max_new_tokens=20, beam_width=1)
+
+    # Reproduce plain greedy decoding by hand for comparison.
+    prompt_ids = [tok.bos_id] + tok.encode(PROMPT_TEMPLATE.format(banglish=banglish))
+    idx = torch.tensor([prompt_ids], dtype=torch.long)
+    with torch.no_grad():
+        for _ in range(20):
+            logits, _ = model(idx[:, -cfg.block_size:])
+            next_id = logits[:, -1, :].argmax(dim=-1, keepdim=True)
+            idx = torch.cat((idx, next_id), dim=1)
+            if next_id.item() == tok.eos_id or idx.shape[1] >= cfg.block_size:
+                break
+    generated = idx[0, len(prompt_ids):].tolist()
+    if generated and generated[-1] == tok.eos_id:
+        generated = generated[:-1]
+    greedy_out = tok.decode(generated)
+
+    assert beam_out == greedy_out
+
+
+def test_beam_search_wider_beam_runs_and_returns_string():
+    import torch
+    from tiny_ai.banglish import beam_search_generate
+    from tiny_ai.config import ModelConfig
+    from tiny_ai.model import TinyTransformer
+
+    tok = _tok()
+    cfg = ModelConfig(vocab_size=tok.vocab_size, block_size=48, n_layer=2, n_head=2, n_embd=16)
+    model = TinyTransformer(cfg)
+    model.eval()
+
+    out = beam_search_generate(model, tok, PROMPT_TEMPLATE, "ami tomake bhalobashi",
+                                max_new_tokens=20, beam_width=4)
+    assert isinstance(out, str)
